@@ -21,8 +21,8 @@ maintainers:
     email: unguiculus@gmail.com
   - name: thomasdarimont
     email: thomas.darimont+github@gmail.com
-dependencies:
-  - name: postgresql
-    version: 10.3.13
-    repository: https://charts.bitnami.com/bitnami
-    condition: postgresql.enabled
+# dependencies:
+#   - name: postgresql
+#     version: 10.3.13
+#     repository: https://charts.bitnami.com/bitnami
+#     condition: postgresql.enabled
