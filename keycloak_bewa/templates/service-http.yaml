@@ -34,16 +34,9 @@ spec:
   {{- end }}
   {{- end }}
   ports:
-    - name: http
-      port: {{ .Values.service.httpPort }}
-      targetPort: http
-      {{- if and (or (eq "NodePort" .Values.service.type) (eq "LoadBalancer" .Values.service.type) ) .Values.service.httpNodePort }}
-      nodePort: {{ .Values.service.httpNodePort }}
-      {{- end }}
-      protocol: TCP
     - name: https
       port: {{ .Values.service.httpsPort }}
-      targetPort: https
+      targetPort: http
       {{- if and (or (eq "NodePort" .Values.service.type) (eq "LoadBalancer" .Values.service.type) ) .Values.service.httpsNodePort }}
       nodePort: {{ .Values.service.httpsNodePort }}
       {{- end }}
