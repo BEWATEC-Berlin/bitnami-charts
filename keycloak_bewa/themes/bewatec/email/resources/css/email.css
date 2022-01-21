@@ -1,0 +1,24 @@
+.heading-wrapper {
+    text-align: center;
+    position: absolute;
+    top: 50px;
+    left: 0;
+}
+
+.heading {
+    color: #757575;
+    padding: 48px;
+    margin: 10px;
+    font: 700 48px Calibri, liberation-sans, Sans-Serif;
+}
+
+#kc-logo {
+    width: 100%;
+}
+
+#kc-logo-wrapper {
+    background-image: url('../img/bewatec-logo_0-padding.png');
+    background-repeat: no-repeat;
+    width: 470px;
+    height: 183px;
+}
