@@ -6,4 +6,4 @@ metadata:
     {{- include "keycloak.labels" . | nindent 4 }}
 data:
 {{- (tpl (.Files.Glob "themes/*").AsConfig .) | nindent 2 }}
-{{- end -}}
+
