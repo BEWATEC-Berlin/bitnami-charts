@@ -13,12 +13,19 @@ NOTE: Not using the common function to avoid generating too long names
 */}}
 {{- define "rmqco.msgTopologyOperator.fullname" -}}
 {{- if .Values.msgTopologyOperator.fullnameOverride -}}
-    {{- .Values.msgTopologyOperator.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+    {{- printf "%s" .Values.msgTopologyOperator.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else if .Values.fullnameOverride -}}
     {{- printf "%s-%s" .Values.fullnameOverride "messaging-topology-operator" | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
     {{- printf "%s-%s" .Release.Name "rabbitmq-messaging-topology-operator" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Return the proper RabbitMQ Messaging Topology Operator fullname adding the installation's namespace.
+*/}}
+{{- define "rmqco.msgTopologyOperator.fullname.namespace" -}}
+{{- printf "%s-%s" (include "rmqco.msgTopologyOperator.fullname" .) (include "common.names.namespace" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
@@ -33,6 +40,13 @@ NOTE: Not using the common function to avoid generating too long names
 {{- else -}}
     {{- printf "%s-%s" .Release.Name "rabbitmq-messaging-topology-operator-webhook" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Return the proper RabbitMQ Messaging Topology Operator fullname adding the installation's namespace.
+*/}}
+{{- define "rmqco.msgTopologyOperator.webhook.fullname.namespace" -}}
+{{- printf "%s-%s" (include "rmqco.msgTopologyOperator.webhook.fullname" .) (include "common.names.namespace" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
@@ -82,6 +96,26 @@ Return the proper Docker Image Registry Secret Names
 {{- end -}}
 
 {{/*
+Return the proper Docker Image Registry Secret Names as a comma separated string
+*/}}
+{{- define "rmqco.imagePullSecrets.string" -}}
+{{- $pullSecrets := list }}
+{{- if .Values.global }}
+  {{- range .Values.global.imagePullSecrets -}}
+    {{- $pullSecrets = append $pullSecrets . -}}
+  {{- end -}}
+{{- end -}}
+{{- range (list .Values.clusterOperator.image .Values.rabbitmqImage) -}}
+  {{- range .pullSecrets -}}
+    {{- $pullSecrets = append $pullSecrets . -}}
+  {{- end -}}
+{{- end -}}
+{{- if (not (empty $pullSecrets)) }}
+  {{- printf "%s" (join "," $pullSecrets) -}}
+{{- end }}
+{{- end }}
+
+{{/*
 Create the name of the service account to use (Cluster Operator)
 */}}
 {{- define "rmqco.clusterOperator.serviceAccountName" -}}
@@ -101,28 +135,4 @@ Create the name of the service account to use (Messaging Topology Operator)
 {{- else -}}
     {{ default "default" .Values.msgTopologyOperator.serviceAccount.name }}
 {{- end -}}
-{{- end -}}
-
-{{/*
-Return the proper Docker Image Registry Secret Names (deprecated: use common.images.renderPullSecrets instead)
-{{ include "common.images.pullSecrets" ( dict "images" (list path.to.the.image1, path.to.the.image2) "global" .Values.global) }}
-*/}}
-{{- define "rmqco.defaultPullSecrets" -}}
-  {{- $pullSecrets := list }}
-  {{- if .global }}
-    {{- range .global.imagePullSecrets -}}
-      {{- $pullSecrets = append $pullSecrets . -}}
-    {{- end -}}
-  {{- end -}}
-
-  {{- range .images -}}
-    {{- range .pullSecrets -}}
-      {{- $pullSecrets = append $pullSecrets . -}}
-    {{- end -}}
-  {{- end -}}
-{{- if (not (empty $pullSecrets)) }}
-{{- range $pullSecrets }}
-- name: {{ . }}
-{{- end }}
-{{- end }}
 {{- end -}}

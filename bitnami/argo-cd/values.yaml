@@ -47,13 +47,16 @@ extraDeploy: []
 ## @param image.registry Argo CD image registry
 ## @param image.repository Argo CD image repository
 ## @param image.tag Argo CD image tag (immutable tags are recommended)
+## @param image.digest Argo CD image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
 ## @param image.pullPolicy Argo CD image pull policy
 ## @param image.pullSecrets Argo CD image pull secrets
+## @param image.debug Enable Argo CD image debug mode
 ##
 image:
   registry: docker.io
   repository: bitnami/argo-cd
-  tag: 2.2.2-debian-10-r8
+  tag: 2.5.4-debian-11-r0
+  digest: ""
   ## Specify a imagePullPolicy
   ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
@@ -67,6 +70,9 @@ image:
   ##   - myRegistryKeySecretName
   ##
   pullSecrets: []
+  ## Enable debug mode
+  ##
+  debug: false
 
 ## @section Argo CD application controller parameters
 
@@ -78,6 +84,20 @@ controller:
   replicaCount: 1
   ## Configure extra options for Argo CD containers' liveness and readiness probes
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes
+  ## @param controller.startupProbe.enabled Enable startupProbe on Argo CD nodes
+  ## @param controller.startupProbe.initialDelaySeconds Initial delay seconds for startupProbe
+  ## @param controller.startupProbe.periodSeconds Period seconds for startupProbe
+  ## @param controller.startupProbe.timeoutSeconds Timeout seconds for startupProbe
+  ## @param controller.startupProbe.failureThreshold Failure threshold for startupProbe
+  ## @param controller.startupProbe.successThreshold Success threshold for startupProbe
+  ##
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 1
+    failureThreshold: 3
+    successThreshold: 1
   ## @param controller.livenessProbe.enabled Enable livenessProbe on Argo CD nodes
   ## @param controller.livenessProbe.initialDelaySeconds Initial delay seconds for livenessProbe
   ## @param controller.livenessProbe.periodSeconds Period seconds for livenessProbe
@@ -106,6 +126,9 @@ controller:
     timeoutSeconds: 1
     failureThreshold: 3
     successThreshold: 1
+  ## @param controller.customStartupProbe Custom startupProbe that overrides the default one
+  ##
+  customStartupProbe: {}
   ## @param controller.customLivenessProbe Custom livenessProbe that overrides the default one
   ##
   customLivenessProbe: {}
@@ -132,10 +155,20 @@ controller:
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
   ## @param controller.containerSecurityContext.enabled Enabled Argo CD containers' Security Context
   ## @param controller.containerSecurityContext.runAsUser Set Argo CD containers' Security Context runAsUser
+  ## @param controller.containerSecurityContext.allowPrivilegeEscalation Set Argo CD containers' Security Context allowPrivilegeEscalation
+  ## @param controller.containerSecurityContext.capabilities.drop Set Argo CD containers' Security Context capabilities to be dropped
+  ## @param controller.containerSecurityContext.readOnlyRootFilesystem Set Argo CD containers' Security Context readOnlyRootFilesystem
+  ## @param controller.containerSecurityContext.runAsNonRoot Set Argo CD container's Security Context runAsNonRoot
   ##
   containerSecurityContext:
     enabled: true
     runAsUser: 1001
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - all
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
 
   ## ServiceAccount configuration for the Argo CD application controller
   ##
@@ -148,7 +181,11 @@ controller:
     ##
     name: ""
     ## @param controller.serviceAccount.automountServiceAccountToken Automount service account token for the application controller service account
+    ##
     automountServiceAccountToken: true
+    ## @param controller.serviceAccount.annotations Annotations for service account. Evaluated as a template. Only used if `create` is `true`.
+    ##
+    annotations: {}
 
   ## Enable admin clusterrole resources. Allows to Argo CD to deploy to the K8s cluster
   ## @param controller.clusterAdminAccess Enable K8s cluster admin access for the application controller
@@ -192,6 +229,11 @@ controller:
     ##
     nodePort: ""
 
+    ## @param controller.service.clusterIP Argo CD application controller service Cluster IP
+    ## e.g.:
+    ## clusterIP: None
+    ##
+    clusterIP: ""
     ## @param controller.service.loadBalancerIP Argo CD application controller service Load Balancer IP
     ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
     ##
@@ -210,6 +252,19 @@ controller:
     ## @param controller.service.annotations Additional custom annotations for Argo CD application controller service
     ##
     annotations: {}
+    ## @param controller.service.extraPorts Extra ports to expose (normally used with the `sidecar` value)
+    ##
+    extraPorts: []
+    ## @param controller.service.sessionAffinity Session Affinity for Kubernetes service, can be "None" or "ClientIP"
+    ## If "ClientIP", consecutive client requests will be directed to the same Pod
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies
+    ##
+    sessionAffinity: None
+    ## @param controller.service.sessionAffinityConfig Additional settings for the sessionAffinity
+    ## sessionAffinityConfig:
+    ##   clientIP:
+    ##     timeoutSeconds: 300
+    sessionAffinityConfig: {}
 
   ## Metrics configuration for Argo CD application controller
   ##
@@ -231,6 +286,11 @@ controller:
       ##
       nodePort: ""
 
+      ## @param controller.metrics.service.clusterIP Argo CD application controller metrics service Cluster IP
+      ## e.g.:
+      ## clusterIP: None
+      ##
+      clusterIP: ""
       ## @param controller.metrics.service.loadBalancerIP Argo CD application controller service Load Balancer IP
       ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
       ##
@@ -249,12 +309,57 @@ controller:
       ## @param controller.metrics.service.annotations Additional custom annotations for Argo CD application controller service
       ##
       annotations: {}
+      ## @param controller.metrics.service.sessionAffinity Session Affinity for Kubernetes service, can be "None" or "ClientIP"
+      ## If "ClientIP", consecutive client requests will be directed to the same Pod
+      ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies
+      ##
+      sessionAffinity: None
+      ## @param controller.metrics.service.sessionAffinityConfig Additional settings for the sessionAffinity
+      ## sessionAffinityConfig:
+      ##   clientIP:
+      ##     timeoutSeconds: 300
+      sessionAffinityConfig: {}
+
     ## Argo CD application controller metrics service monitor configuration
-    ## @param controller.metrics.serviceMonitor.enabled Enable service monirot for Argo CD application controller
-    ## @param controller.metrics.serviceMonitor.interval Interval for the Argo CD application controller service monitor
+    ##
     serviceMonitor:
+      ## @param controller.metrics.serviceMonitor.enabled Create ServiceMonitor Resource for scraping metrics using PrometheusOperator
+      ##
       enabled: false
+      ## @param controller.metrics.serviceMonitor.namespace Namespace which Prometheus is running in
+      ## e.g:
+      ## namespace: monitoring
+      ##
+      namespace: ""
+      ## @param controller.metrics.serviceMonitor.jobLabel The name of the label on the target service to use as the job name in prometheus.
+      ##
+      jobLabel: ""
+      ## @param controller.metrics.serviceMonitor.interval Interval at which metrics should be scraped
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+      ##
       interval: 30s
+      ## @param controller.metrics.serviceMonitor.scrapeTimeout Timeout after which the scrape is ended
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+      ##
+      scrapeTimeout: 10s
+      ## @param controller.metrics.serviceMonitor.relabelings RelabelConfigs to apply to samples before scraping
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+      ##
+      relabelings: []
+      ## @param controller.metrics.serviceMonitor.metricRelabelings MetricRelabelConfigs to apply to samples before ingestion
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+      ##
+      metricRelabelings: []
+      ## @param controller.metrics.serviceMonitor.selector ServiceMonitor selector labels
+      ## ref: https://github.com/bitnami/charts/tree/main/bitnami/prometheus-operator#prometheus-configuration
+      ##
+      ## selector:
+      ##   prometheus: my-prometheus
+      ##
+      selector: {}
+      ## @param controller.metrics.serviceMonitor.honorLabels honorLabels chooses the metric's labels on collisions with target labels
+      ##
+      honorLabels: false
 
     ## Rules for PrometheusRule object if enabled
     ##
@@ -373,6 +478,23 @@ controller:
   ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
   ##
   tolerations: []
+  ## @param controller.schedulerName Name of the k8s scheduler (other than default)
+  ## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+  ##
+  schedulerName: ""
+  ## @param controller.shareProcessNamespace Enable shared process namespace in a pod.
+  ## If set to false (default), each container will run in separate namespace, controller will have PID=1.
+  ## If set to true, the /pause will run as init process and will reap any zombie PIDs,
+  ## for example, generated by a custom exec probe running longer than a probe timeoutSeconds.
+  ## Enable this only if customLivenessProbe or customReadinessProbe is used and zombie PIDs are accumulating.
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
+  ##
+  shareProcessNamespace: false
+  ## @param controller.topologySpreadConstraints Topology Spread Constraints for pod assignment
+  ## https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+  ## The value is evaluated as a template
+  ##
+  topologySpreadConstraints: []
   ## @param controller.updateStrategy.type Argo CD statefulset strategy type
   ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
   ##
@@ -384,6 +506,10 @@ controller:
   ## @param controller.priorityClassName Argo CD pods' priorityClassName
   ##
   priorityClassName: ""
+  ## @param controller.runtimeClassName Name of the runtime class to be used by pod(s)
+  ## ref: https://kubernetes.io/docs/concepts/containers/runtime-class/
+  ##
+  runtimeClassName: ""
   ## @param controller.lifecycleHooks for the Argo CD container(s) to automate configuration before or after startup
   ##
   lifecycleHooks: {}
@@ -439,6 +565,20 @@ server:
   replicaCount: 1
   ## Configure extra options for Argo CD server containers' liveness and readiness probes
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes
+  ## @param server.startupProbe.enabled Enable startupProbe on Argo CD server nodes
+  ## @param server.startupProbe.initialDelaySeconds Initial delay seconds for startupProbe
+  ## @param server.startupProbe.periodSeconds Period seconds for startupProbe
+  ## @param server.startupProbe.timeoutSeconds Timeout seconds for startupProbe
+  ## @param server.startupProbe.failureThreshold Failure threshold for startupProbe
+  ## @param server.startupProbe.successThreshold Success threshold for startupProbe
+  ##
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 1
+    failureThreshold: 3
+    successThreshold: 1
   ## @param server.livenessProbe.enabled Enable livenessProbe on Argo CD server nodes
   ## @param server.livenessProbe.initialDelaySeconds Initial delay seconds for livenessProbe
   ## @param server.livenessProbe.periodSeconds Period seconds for livenessProbe
@@ -467,6 +607,9 @@ server:
     timeoutSeconds: 1
     failureThreshold: 3
     successThreshold: 1
+  ## @param server.customStartupProbe Custom startupProbe that overrides the default one
+  ##
+  customStartupProbe: {}
   ## @param server.customLivenessProbe Custom livenessProbe that overrides the default one
   ##
   customLivenessProbe: {}
@@ -493,10 +636,20 @@ server:
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
   ## @param server.containerSecurityContext.enabled Enabled Argo CD server containers' Security Context
   ## @param server.containerSecurityContext.runAsUser Set Argo CD server containers' Security Context runAsUser
+  ## @param server.containerSecurityContext.allowPrivilegeEscalation Set Argo CD server containers' Security Context allowPrivilegeEscalation
+  ## @param server.containerSecurityContext.capabilities.drop Set Argo CD containers' server Security Context capabilities to be dropped
+  ## @param server.containerSecurityContext.readOnlyRootFilesystem Set Argo CD containers' server Security Context readOnlyRootFilesystem
+  ## @param server.containerSecurityContext.runAsNonRoot Set Argo CD server containers' Security Context runAsNonRoot
   ##
   containerSecurityContext:
     enabled: true
     runAsUser: 1001
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - all
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
 
   ## Argo CD server deployment autoscaling
   ## @param server.autoscaling.enabled Enable Argo CD server deployment autoscaling
@@ -601,6 +754,7 @@ server:
   ## @param server.ingress.extraPaths Extra paths for the Argo CD server ingress
   ## @param server.ingress.extraTls Extra TLS configuration for the Argo CD server ingress
   ## @param server.ingress.secrets Secrets array to mount into the Ingress
+  ## @param server.ingress.ingressClassName IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)
   ##
   ingress:
     ## Set to true to enable ingress record generation
@@ -646,7 +800,7 @@ server:
 
     ## Enable TLS configuration for the hostname defined at ingress.hostname parameter
     ## TLS certificates will be retrieved from a TLS secret with name: {{- printf "%s-tls" .Values.ingress.hostname }}
-    ## You can use the ingress.secrets parameter to create this TLS secret or relay on cert-manager to create it
+    ## You can use the ingress.secrets parameter to create this TLS secret or rely on cert-manager to create it
     ##
     tls: false
 
@@ -690,6 +844,25 @@ server:
     ##   certificate:
     ##
 
+    ## This is supported in Kubernetes 1.18+ and required if you have more than one IngressClass marked as the default for your cluster .
+    ## ref: https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/
+    ##
+    ingressClassName: ""
+    ## @param server.ingress.extraRules Additional rules to be covered with this ingress record
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    ## e.g:
+    ## extraRules:
+    ## - host: example.local
+    ##     http:
+    ##       path: /
+    ##       backend:
+    ##         service:
+    ##           name: example-svc
+    ##           port:
+    ##             name: http
+    ##
+    extraRules: []
+
   ## Metrics configuration for Argo CD server
   ##
   metrics:
@@ -703,7 +876,7 @@ server:
       type: ClusterIP
       ## @param server.metrics.service.port Argo CD server metrics service port
       ##
-      port: 8084
+      port: 8083
 
       ## Node ports to expose
       ## @param server.metrics.service.nodePort Node port for Argo CD server metrics service
@@ -711,6 +884,11 @@ server:
       ##
       nodePort: ""
 
+      ## @param server.metrics.service.clusterIP Argo CD server metrics service Cluster IP
+      ## e.g.:
+      ## clusterIP: None
+      ##
+      clusterIP: ""
       ## @param server.metrics.service.loadBalancerIP Argo CD server service Load Balancer IP
       ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
       ##
@@ -729,12 +907,57 @@ server:
       ## @param server.metrics.service.annotations Additional custom annotations for Argo CD server service
       ##
       annotations: {}
+      ## @param server.metrics.service.sessionAffinity Session Affinity for Kubernetes service, can be "None" or "ClientIP"
+      ## If "ClientIP", consecutive client requests will be directed to the same Pod
+      ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies
+      ##
+      sessionAffinity: None
+      ## @param server.metrics.service.sessionAffinityConfig Additional settings for the sessionAffinity
+      ## sessionAffinityConfig:
+      ##   clientIP:
+      ##     timeoutSeconds: 300
+      sessionAffinityConfig: {}
+
     ## Argo CD server metrics service monitor configuration
-    ## @param server.metrics.serviceMonitor.enabled Enable service monirot for Argo CD server
-    ## @param server.metrics.serviceMonitor.interval Interval for the Argo CD server service monitor
+    ##
     serviceMonitor:
+      ## @param server.metrics.serviceMonitor.enabled Create ServiceMonitor Resource for scraping metrics using PrometheusOperator
+      ##
       enabled: false
+      ## @param server.metrics.serviceMonitor.namespace Namespace which Prometheus is running in
+      ## e.g:
+      ## namespace: monitoring
+      ##
+      namespace: ""
+      ## @param server.metrics.serviceMonitor.jobLabel The name of the label on the target service to use as the job name in prometheus.
+      ##
+      jobLabel: ""
+      ## @param server.metrics.serviceMonitor.interval Interval at which metrics should be scraped
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+      ##
       interval: 30s
+      ## @param server.metrics.serviceMonitor.scrapeTimeout Timeout after which the scrape is ended
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+      ##
+      scrapeTimeout: 10s
+      ## @param server.metrics.serviceMonitor.relabelings RelabelConfigs to apply to samples before scraping
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+      ##
+      relabelings: []
+      ## @param server.metrics.serviceMonitor.metricRelabelings MetricRelabelConfigs to apply to samples before ingestion
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+      ##
+      metricRelabelings: []
+      ## @param server.metrics.serviceMonitor.selector ServiceMonitor selector labels
+      ## ref: https://github.com/bitnami/charts/tree/main/bitnami/prometheus-operator#prometheus-configuration
+      ##
+      ## selector:
+      ##   prometheus: my-prometheus
+      ##
+      selector: {}
+      ## @param server.metrics.serviceMonitor.honorLabels honorLabels chooses the metric's labels on collisions with target labels
+      ##
+      honorLabels: false
 
   ## Configure the ingress resource that allows you to access the Argo CD gRPC API
   ## Ref: https://kubernetes.io/docs/user-guide/ingress/
@@ -750,6 +973,7 @@ server:
   ## @param server.ingressGrpc.extraPaths Extra paths for the Argo CD gRPC server ingress
   ## @param server.ingressGrpc.extraTls Extra TLS configuration for the Argo CD gRPC server ingress
   ## @param server.ingressGrpc.secrets Secrets array to mount into the Ingress
+  ## @param server.ingressGrpc.ingressClassName IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)
   ##
   ingressGrpc:
     ## Set to true to enable ingress record generation
@@ -839,6 +1063,25 @@ server:
     ##   certificate:
     ##
 
+    ## This is supported in Kubernetes 1.18+ and required if you have more than one IngressClass marked as the default for your cluster .
+    ## ref: https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/
+    ##
+    ingressClassName: ""
+    ## @param server.ingressGrpc.extraRules Additional rules to be covered with this ingress record
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+    ## e.g:
+    ## extraRules:
+    ## - host: example.server.local
+    ##     http:
+    ##       path: /
+    ##       backend:
+    ##         service:
+    ##           name: example-svc
+    ##           port:
+    ##             name: http
+    ##
+    extraRules: []
+
   ## Argo CD server container port
   ## @param server.containerPorts.http Argo CD server HTTP container port
   ## @param server.containerPorts.https Argo CD server HTTPS container port
@@ -870,6 +1113,11 @@ server:
       http: ""
       https: ""
 
+    ## @param server.service.clusterIP Argo CD service Cluster IP
+    ## e.g.:
+    ## clusterIP: None
+    ##
+    clusterIP: ""
     ## @param server.service.loadBalancerIP Argo CD service Load Balancer IP
     ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
     ##
@@ -888,6 +1136,19 @@ server:
     ## @param server.service.annotations Additional custom annotations for Argo CD service
     ##
     annotations: {}
+    ## @param server.service.extraPorts Extra ports to expose (normally used with the `sidecar` value)
+    ##
+    extraPorts: []
+    ## @param server.service.sessionAffinity Session Affinity for Kubernetes service, can be "None" or "ClientIP"
+    ## If "ClientIP", consecutive client requests will be directed to the same Pod
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies
+    ##
+    sessionAffinity: None
+    ## @param server.service.sessionAffinityConfig Additional settings for the sessionAffinity
+    ## sessionAffinityConfig:
+    ##   clientIP:
+    ##     timeoutSeconds: 300
+    sessionAffinityConfig: {}
 
   ## @param server.command Override default container command (useful when using custom images)
   ##
@@ -948,6 +1209,23 @@ server:
   ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
   ##
   tolerations: []
+  ## @param server.schedulerName Name of the k8s scheduler (other than default)
+  ## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+  ##
+  schedulerName: ""
+  ## @param server.shareProcessNamespace Enable shared process namespace in a pod.
+  ## If set to false (default), each container will run in separate namespace, server will have PID=1.
+  ## If set to true, the /pause will run as init process and will reap any zombie PIDs,
+  ## for example, generated by a custom exec probe running longer than a probe timeoutSeconds.
+  ## Enable this only if customLivenessProbe or customReadinessProbe is used and zombie PIDs are accumulating.
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
+  ##
+  shareProcessNamespace: false
+  ## @param server.topologySpreadConstraints Topology Spread Constraints for pod assignment
+  ## https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+  ## The value is evaluated as a template
+  ##
+  topologySpreadConstraints: []
   ## @param server.updateStrategy.type Argo CD server statefulset strategy type
   ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
   ##
@@ -959,6 +1237,10 @@ server:
   ## @param server.priorityClassName Argo CD server pods' priorityClassName
   ##
   priorityClassName: ""
+  ## @param server.runtimeClassName Name of the runtime class to be used by pod(s)
+  ## ref: https://kubernetes.io/docs/concepts/containers/runtime-class/
+  ##
+  runtimeClassName: ""
   ## @param server.lifecycleHooks for the Argo CD server container(s) to automate configuration before or after startup
   ##
   lifecycleHooks: {}
@@ -1014,7 +1296,11 @@ server:
     ##
     name: ""
     ## @param server.serviceAccount.automountServiceAccountToken Automount service account token for the server service account
+    ##
     automountServiceAccountToken: true
+    ## @param server.serviceAccount.annotations Annotations for service account. Evaluated as a template. Only used if `create` is `true`.
+    ##
+    annotations: {}
 
 ## @section Argo CD repo server Parameters
 
@@ -1026,6 +1312,20 @@ repoServer:
   replicaCount: 1
   ## Configure extra options for Argo CD repo server containers' liveness and readiness probes
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes
+  ## @param repoServer.startupProbe.enabled Enable startupProbe on Argo CD repo server nodes
+  ## @param repoServer.startupProbe.initialDelaySeconds Initial delay seconds for startupProbe
+  ## @param repoServer.startupProbe.periodSeconds Period seconds for startupProbe
+  ## @param repoServer.startupProbe.timeoutSeconds Timeout seconds for startupProbe
+  ## @param repoServer.startupProbe.failureThreshold Failure threshold for startupProbe
+  ## @param repoServer.startupProbe.successThreshold Success threshold for startupProbe
+  ##
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 1
+    failureThreshold: 3
+    successThreshold: 1
   ## @param repoServer.livenessProbe.enabled Enable livenessProbe on Argo CD repo server nodes
   ## @param repoServer.livenessProbe.initialDelaySeconds Initial delay seconds for livenessProbe
   ## @param repoServer.livenessProbe.periodSeconds Period seconds for livenessProbe
@@ -1054,6 +1354,9 @@ repoServer:
     timeoutSeconds: 1
     failureThreshold: 3
     successThreshold: 1
+  ## @param repoServer.customStartupProbe Custom startupProbe that overrides the default one
+  ##
+  customStartupProbe: {}
   ## @param repoServer.customLivenessProbe Custom livenessProbe that overrides the default one
   ##
   customLivenessProbe: {}
@@ -1080,10 +1383,20 @@ repoServer:
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
   ## @param repoServer.containerSecurityContext.enabled Enabled Argo CD repo server containers' Security Context
   ## @param repoServer.containerSecurityContext.runAsUser Set Argo CD repo server containers' Security Context runAsUser
+  ## @param repoServer.containerSecurityContext.allowPrivilegeEscalation Set Argo CD repo server containers' Security Context allowPrivilegeEscalation
+  ## @param repoServer.containerSecurityContext.capabilities.drop Set Argo CD containers' repo server Security Context capabilities to be dropped
+  ## @param repoServer.containerSecurityContext.readOnlyRootFilesystem Set Argo CD containers' repo server Security Context readOnlyRootFilesystem
+  ## @param repoServer.containerSecurityContext.runAsNonRoot Set Argo CD repo server containers' Security Context runAsNonRoot
   ##
   containerSecurityContext:
     enabled: true
     runAsUser: 1001
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - all
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
 
   ## Repo server service parameters
   ##
@@ -1100,6 +1413,11 @@ repoServer:
     ##
     nodePort: ""
 
+    ## @param repoServer.service.clusterIP Repo server service Cluster IP
+    ## e.g.:
+    ## clusterIP: None
+    ##
+    clusterIP: ""
     ## @param repoServer.service.loadBalancerIP Repo server service Load Balancer IP
     ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
     ##
@@ -1118,6 +1436,19 @@ repoServer:
     ## @param repoServer.service.annotations Additional custom annotations for Repo server service
     ##
     annotations: {}
+    ## @param repoServer.service.extraPorts Extra ports to expose (normally used with the `sidecar` value)
+    ##
+    extraPorts: []
+    ## @param repoServer.service.sessionAffinity Session Affinity for Kubernetes service, can be "None" or "ClientIP"
+    ## If "ClientIP", consecutive client requests will be directed to the same Pod
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies
+    ##
+    sessionAffinity: None
+    ## @param repoServer.service.sessionAffinityConfig Additional settings for the sessionAffinity
+    ## sessionAffinityConfig:
+    ##   clientIP:
+    ##     timeoutSeconds: 300
+    sessionAffinityConfig: {}
 
   ## Argo CD repo server log format: text|json
   ## @param repoServer.logFormat Format for the Argo CD repo server logs. Options: [text, json]
@@ -1134,7 +1465,7 @@ repoServer:
   ##
   containerPorts:
     repoServer: 8081
-    metrics: ""
+    metrics: 8084
 
   ## Metrics configuration for Argo CD repo server
   ##
@@ -1157,6 +1488,11 @@ repoServer:
       ##
       nodePort: ""
 
+      ## @param repoServer.metrics.service.clusterIP Argo CD repo server metrics service Cluster IP
+      ## e.g.:
+      ## clusterIP: None
+      ##
+      clusterIP: ""
       ## @param repoServer.metrics.service.loadBalancerIP Argo CD repo server service Load Balancer IP
       ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
       ##
@@ -1175,12 +1511,57 @@ repoServer:
       ## @param repoServer.metrics.service.annotations Additional custom annotations for Argo CD repo server service
       ##
       annotations: {}
+      ## @param repoServer.metrics.service.sessionAffinity Session Affinity for Kubernetes service, can be "None" or "ClientIP"
+      ## If "ClientIP", consecutive client requests will be directed to the same Pod
+      ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies
+      ##
+      sessionAffinity: None
+      ## @param repoServer.metrics.service.sessionAffinityConfig Additional settings for the sessionAffinity
+      ## sessionAffinityConfig:
+      ##   clientIP:
+      ##     timeoutSeconds: 300
+      sessionAffinityConfig: {}
+
     ## Argo CD repo server metrics service monitor configuration
-    ## @param repoServer.metrics.serviceMonitor.enabled Enable service monirot for Argo CD repo server
-    ## @param repoServer.metrics.serviceMonitor.interval Interval for the Argo CD repo server service monitor
+    ##
     serviceMonitor:
+      ## @param repoServer.metrics.serviceMonitor.enabled Create ServiceMonitor Resource for scraping metrics using PrometheusOperator
+      ##
       enabled: false
+      ## @param repoServer.metrics.serviceMonitor.namespace Namespace which Prometheus is running in
+      ## e.g:
+      ## namespace: monitoring
+      ##
+      namespace: ""
+      ## @param repoServer.metrics.serviceMonitor.jobLabel The name of the label on the target service to use as the job name in prometheus.
+      ##
+      jobLabel: ""
+      ## @param repoServer.metrics.serviceMonitor.interval Interval at which metrics should be scraped
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+      ##
       interval: 30s
+      ## @param repoServer.metrics.serviceMonitor.scrapeTimeout Timeout after which the scrape is ended
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+      ##
+      scrapeTimeout: 10s
+      ## @param repoServer.metrics.serviceMonitor.relabelings RelabelConfigs to apply to samples before scraping
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+      ##
+      relabelings: []
+      ## @param repoServer.metrics.serviceMonitor.metricRelabelings MetricRelabelConfigs to apply to samples before ingestion
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+      ##
+      metricRelabelings: []
+      ## @param repoServer.metrics.serviceMonitor.selector ServiceMonitor selector labels
+      ## ref: https://github.com/bitnami/charts/tree/main/bitnami/prometheus-operator#prometheus-configuration
+      ##
+      ## selector:
+      ##   prometheus: my-prometheus
+      ##
+      selector: {}
+      ## @param repoServer.metrics.serviceMonitor.honorLabels honorLabels chooses the metric's labels on collisions with target labels
+      ##
+      honorLabels: false
 
   ## Argo CD repo server deployment autoscaling
   ## @param repoServer.autoscaling.enabled Enable Argo CD repo server deployment autoscaling
@@ -1207,7 +1588,11 @@ repoServer:
     ##
     name: ""
     ## @param repoServer.serviceAccount.automountServiceAccountToken Automount service account token for the repo server service account
+    ##
     automountServiceAccountToken: true
+    ## @param repoServer.serviceAccount.annotations Annotations for service account. Evaluated as a template. Only used if `create` is `true`.
+    ##
+    annotations: {}
 
   ## @param repoServer.command Override default container command (useful when using custom images)
   ##
@@ -1268,6 +1653,23 @@ repoServer:
   ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
   ##
   tolerations: []
+  ## @param repoServer.schedulerName Name of the k8s scheduler (other than default)
+  ## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+  ##
+  schedulerName: ""
+  ## @param repoServer.shareProcessNamespace Enable shared process namespace in a pod.
+  ## If set to false (default), each container will run in separate namespace, repoServer will have PID=1.
+  ## If set to true, the /pause will run as init process and will reap any zombie PIDs,
+  ## for example, generated by a custom exec probe running longer than a probe timeoutSeconds.
+  ## Enable this only if customLivenessProbe or customReadinessProbe is used and zombie PIDs are accumulating.
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
+  ##
+  shareProcessNamespace: false
+  ## @param repoServer.topologySpreadConstraints Topology Spread Constraints for pod assignment
+  ## https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+  ## The value is evaluated as a template
+  ##
+  topologySpreadConstraints: []
   ## @param repoServer.updateStrategy.type Argo CD repo server statefulset strategy type
   ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
   ##
@@ -1279,6 +1681,10 @@ repoServer:
   ## @param repoServer.priorityClassName Argo CD repo server pods' priorityClassName
   ##
   priorityClassName: ""
+  ## @param repoServer.runtimeClassName Name of the runtime class to be used by pod(s)
+  ## ref: https://kubernetes.io/docs/concepts/containers/runtime-class/
+  ##
+  runtimeClassName: ""
   ## @param repoServer.lifecycleHooks for the Argo CD repo server container(s) to automate configuration before or after startup
   ##
   lifecycleHooks: {}
@@ -1333,13 +1739,16 @@ dex:
   ## @param dex.image.registry Dex image registry
   ## @param dex.image.repository Dex image repository
   ## @param dex.image.tag Dex image tag (immutable tags are recommended)
+  ## @param dex.image.digest Dex image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
   ## @param dex.image.pullPolicy Dex image pull policy
   ## @param dex.image.pullSecrets Dex image pull secrets
+  ## @param dex.image.debug Enable Dex image debug mode
   ##
   image:
     registry: docker.io
     repository: bitnami/dex
-    tag: 2.30.2-debian-10-r52
+    tag: 2.35.3-debian-11-r18
+    digest: ""
     ## Specify a imagePullPolicy
     ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
     ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
@@ -1353,6 +1762,9 @@ dex:
     ##   - myRegistryKeySecretName
     ##
     pullSecrets: []
+    ## Enable debug mode
+    ##
+    debug: false
 
   ## Enable Dex deployment
   ## @param dex.enabled Enable the creation of a Dex deployment for SSO
@@ -1363,6 +1775,20 @@ dex:
   replicaCount: 1
   ## Configure extra options for Dex containers' liveness and readiness probes
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes
+  ## @param dex.startupProbe.enabled Enable startupProbe on Dex nodes
+  ## @param dex.startupProbe.initialDelaySeconds Initial delay seconds for startupProbe
+  ## @param dex.startupProbe.periodSeconds Period seconds for startupProbe
+  ## @param dex.startupProbe.timeoutSeconds Timeout seconds for startupProbe
+  ## @param dex.startupProbe.failureThreshold Failure threshold for startupProbe
+  ## @param dex.startupProbe.successThreshold Success threshold for startupProbe
+  ##
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 1
+    failureThreshold: 3
+    successThreshold: 1
   ## @param dex.livenessProbe.enabled Enable livenessProbe on Dex nodes
   ## @param dex.livenessProbe.initialDelaySeconds Initial delay seconds for livenessProbe
   ## @param dex.livenessProbe.periodSeconds Period seconds for livenessProbe
@@ -1391,6 +1817,9 @@ dex:
     timeoutSeconds: 1
     failureThreshold: 3
     successThreshold: 1
+  ## @param dex.customStartupProbe Custom startupProbe that overrides the default one
+  ##
+  customStartupProbe: {}
   ## @param dex.customLivenessProbe Custom livenessProbe that overrides the default one
   ##
   customLivenessProbe: {}
@@ -1417,10 +1846,16 @@ dex:
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
   ## @param dex.containerSecurityContext.enabled Enabled Dex containers' Security Context
   ## @param dex.containerSecurityContext.runAsUser Set Dex containers' Security Context runAsUser
+  ## @param dex.containerSecurityContext.allowPrivilegeEscalation Set Dex containers' Security Context allowPrivilegeEscalation
+  ## @param dex.containerSecurityContext.readOnlyRootFilesystem Set Dex containers' server Security Context readOnlyRootFilesystem
+  ## @param dex.containerSecurityContext.runAsNonRoot Set Dex containers' Security Context runAsNonRoot
   ##
   containerSecurityContext:
     enabled: true
     runAsUser: 1001
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
 
   ## Dex service parameters
   ##
@@ -1444,6 +1879,11 @@ dex:
       http: ""
       grpc: ""
 
+    ## @param dex.service.clusterIP Dex service Cluster IP
+    ## e.g.:
+    ## clusterIP: None
+    ##
+    clusterIP: ""
     ## @param dex.service.loadBalancerIP Dex service Load Balancer IP
     ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
     ##
@@ -1462,6 +1902,19 @@ dex:
     ## @param dex.service.annotations Additional custom annotations for Dex service
     ##
     annotations: {}
+    ## @param dex.service.extraPorts Extra ports to expose (normally used with the `sidecar` value)
+    ##
+    extraPorts: []
+    ## @param dex.service.sessionAffinity Session Affinity for Kubernetes service, can be "None" or "ClientIP"
+    ## If "ClientIP", consecutive client requests will be directed to the same Pod
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies
+    ##
+    sessionAffinity: None
+    ## @param dex.service.sessionAffinityConfig Additional settings for the sessionAffinity
+    ## sessionAffinityConfig:
+    ##   clientIP:
+    ##     timeoutSeconds: 300
+    sessionAffinityConfig: {}
 
   ## Dex container ports
   ## @param dex.containerPorts.http Dex container HTTP port
@@ -1494,6 +1947,11 @@ dex:
       ##
       nodePort: ""
 
+      ## @param dex.metrics.service.clusterIP Dex service metrics service Cluster IP
+      ## e.g.:
+      ## clusterIP: None
+      ##
+      clusterIP: ""
       ## @param dex.metrics.service.loadBalancerIP Dex service Load Balancer IP
       ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
       ##
@@ -1512,12 +1970,57 @@ dex:
       ## @param dex.metrics.service.annotations Additional custom annotations for Dex service
       ##
       annotations: {}
+      ## @param dex.metrics.service.sessionAffinity Session Affinity for Kubernetes service, can be "None" or "ClientIP"
+      ## If "ClientIP", consecutive client requests will be directed to the same Pod
+      ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies
+      ##
+      sessionAffinity: None
+      ## @param dex.metrics.service.sessionAffinityConfig Additional settings for the sessionAffinity
+      ## sessionAffinityConfig:
+      ##   clientIP:
+      ##     timeoutSeconds: 300
+      sessionAffinityConfig: {}
+
     ## Dex metrics service monitor configuration
-    ## @param dex.metrics.serviceMonitor.enabled Enable service monirot for Dex
-    ## @param dex.metrics.serviceMonitor.interval Interval for the Dex service monitor
+    ##
     serviceMonitor:
+      ## @param dex.metrics.serviceMonitor.enabled Create ServiceMonitor Resource for scraping metrics using PrometheusOperator
+      ##
       enabled: false
+      ## @param dex.metrics.serviceMonitor.namespace Namespace which Prometheus is running in
+      ## e.g:
+      ## namespace: monitoring
+      ##
+      namespace: ""
+      ## @param dex.metrics.serviceMonitor.jobLabel The name of the label on the target service to use as the job name in prometheus.
+      ##
+      jobLabel: ""
+      ## @param dex.metrics.serviceMonitor.interval Interval at which metrics should be scraped
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+      ##
       interval: 30s
+      ## @param dex.metrics.serviceMonitor.scrapeTimeout Timeout after which the scrape is ended
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+      ##
+      scrapeTimeout: 10s
+      ## @param dex.metrics.serviceMonitor.relabelings RelabelConfigs to apply to samples before scraping
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+      ##
+      relabelings: []
+      ## @param dex.metrics.serviceMonitor.metricRelabelings MetricRelabelConfigs to apply to samples before ingestion
+      ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+      ##
+      metricRelabelings: []
+      ## @param dex.metrics.serviceMonitor.selector ServiceMonitor selector labels
+      ## ref: https://github.com/bitnami/charts/tree/main/bitnami/prometheus-operator#prometheus-configuration
+      ##
+      ## selector:
+      ##   prometheus: my-prometheus
+      ##
+      selector: {}
+      ## @param dex.metrics.serviceMonitor.honorLabels honorLabels chooses the metric's labels on collisions with target labels
+      ##
+      honorLabels: false
 
   ## ServiceAccount configuration for the Dex
   ##
@@ -1530,7 +2033,11 @@ dex:
     ##
     name: ""
     ## @param dex.serviceAccount.automountServiceAccountToken Automount service account token for the Dex service account
+    ##
     automountServiceAccountToken: true
+    ## @param dex.serviceAccount.annotations Annotations for service account. Evaluated as a template. Only used if `create` is `true`.
+    ##
+    annotations: {}
 
   ## @param dex.command Override default container command (useful when using custom images)
   ##
@@ -1591,6 +2098,23 @@ dex:
   ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
   ##
   tolerations: []
+  ## @param dex.schedulerName Name of the k8s scheduler (other than default)
+  ## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+  ##
+  schedulerName: ""
+  ## @param dex.shareProcessNamespace Enable shared process namespace in a pod.
+  ## If set to false (default), each container will run in separate namespace, dex will have PID=1.
+  ## If set to true, the /pause will run as init process and will reap any zombie PIDs,
+  ## for example, generated by a custom exec probe running longer than a probe timeoutSeconds.
+  ## Enable this only if customLivenessProbe or customReadinessProbe is used and zombie PIDs are accumulating.
+  ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
+  ##
+  shareProcessNamespace: false
+  ## @param dex.topologySpreadConstraints Topology Spread Constraints for pod assignment
+  ## https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+  ## The value is evaluated as a template
+  ##
+  topologySpreadConstraints: []
   ## @param dex.updateStrategy.type Dex statefulset strategy type
   ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
   ##
@@ -1602,6 +2126,10 @@ dex:
   ## @param dex.priorityClassName Dex pods' priorityClassName
   ##
   priorityClassName: ""
+  ## @param dex.runtimeClassName Name of the runtime class to be used by pod(s)
+  ## ref: https://kubernetes.io/docs/concepts/containers/runtime-class/
+  ##
+  runtimeClassName: ""
   ## @param dex.lifecycleHooks for the Dex container(s) to automate configuration before or after startup
   ##
   lifecycleHooks: {}
@@ -1813,13 +2341,15 @@ volumePermissions:
   ## @param volumePermissions.image.registry Bitnami Shell image registry
   ## @param volumePermissions.image.repository Bitnami Shell image repository
   ## @param volumePermissions.image.tag Bitnami Shell image tag (immutable tags are recommended)
+  ## @param volumePermissions.image.digest Bitnami Shell image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
   ## @param volumePermissions.image.pullPolicy Bitnami Shell image pull policy
   ## @param volumePermissions.image.pullSecrets Bitnami Shell image pull secrets
   ##
   image:
     registry: docker.io
     repository: bitnami/bitnami-shell
-    tag: 10-debian-10-r305
+    tag: 11-debian-11-r59
+    digest: ""
     pullPolicy: IfNotPresent
     ## Optionally specify an array of imagePullSecrets.
     ## Secrets must be manually created in the namespace.
@@ -1861,16 +2391,18 @@ rbac:
 redis:
   ## Bitnami Redis image
   ## ref: https://hub.docker.com/r/bitnami/redis/tags/
-  ## @param redis.image.registry Argo CD controller image registry
-  ## @param redis.image.repository Argo CD controller image repository
-  ## @param redis.image.tag Argo CD controller image tag (immutable tags are recommended)
-  ## @param redis.image.pullPolicy Argo CD controller image pull policy
-  ## @param redis.image.pullSecrets Argo CD controller image pull secrets
+  ## @param redis.image.registry Redis image registry
+  ## @param redis.image.repository Redis image repository
+  ## @param redis.image.tag Redis image tag (immutable tags are recommended)
+  ## @param redis.image.digest Redis image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
+  ## @param redis.image.pullPolicy Redis image pull policy
+  ## @param redis.image.pullSecrets Redis image pull secrets
   ##
   image:
     registry: docker.io
     repository: bitnami/redis
-    tag: 6.2.6-debian-10-r95
+    tag: 7.0.5-debian-11-r26
+    digest: ""
     ## Specify a imagePullPolicy
     ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
     ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
@@ -1908,29 +2440,29 @@ redis:
     ##
     existingSecret: ""
     ##
-    ## Password key to be retrieved from Redis&trade; secret
+    ## Password key to be retrieved from Redis&reg; secret
     ##
     existingSecretPasswordKey: 'redis-password'
 
   ## Cluster settings
-  ## @disabled-param redis.architecture Redis dependency architecture. Either 'standalone' or 'replicaset'
+  ## @param redis.architecture Redis&reg; architecture. Allowed values: `standalone` or `replication`
   ## TODO(miguelaeh): We need to test the chart with redis sentinel, it seems to be supported at: https://github.com/argoproj/argo-cd/blob/2a410187565e15633b6f2a8c8d8da22cf02b257d/util/cache/cache.go#L40
   ##
-  ## architecture: standalone
+  architecture: standalone
 
 ##
-## External Redis&trade;
+## External Redis&reg;
 ##
 externalRedis:
-  ## Redis&trade; host
+  ## Redis&reg; host
   ## @param externalRedis.host External Redis host
   ##
   host: ""
-  ## Redis&trade; port
+  ## Redis&reg; port
   ## @param externalRedis.port External Redis port
   ##
   port: 6379
-  ## Redis&trade; password for authentication
+  ## Redis&reg; password for authentication
   ## Ignored if existingSecret is set
   ## @param externalRedis.password External Redis password
   ##
@@ -1939,7 +2471,20 @@ externalRedis:
   ## @param externalRedis.existingSecret Existing secret for the external redis
   ##
   existingSecret: ""
-  ## Password key to be retrieved from Redis&trade; secret
+  ## Password key to be retrieved from Redis&reg; secret
   ## @param externalRedis.existingSecretPasswordKey Password key for the existing secret containing the external redis password
   ##
   existingSecretPasswordKey: 'redis-password'
+
+## Wait-for-redis init container configuration
+##
+redisWait:
+  ## @param redisWait.enabled Enables waiting for redis
+  ##
+  enabled: true
+  ## @param redisWait.extraArgs Additional arguments for the redis-cli call, such as TLS
+  ##
+  extraArgs: ''
+  ## @param redisWait.securityContext Security context for init container
+  ##
+  securityContext: {}

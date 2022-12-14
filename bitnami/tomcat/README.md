@@ -1,24 +1,32 @@
-# Tomcat
+<!--- app-name: Apache Tomcat -->
 
-[Apache Tomcat](http://tomcat.apache.org/), often referred to as Tomcat, is an open-source web server and servlet container developed by the Apache Software Foundation. Tomcat implements several Java EE specifications including Java Servlet, JavaServer Pages, Java EL, and WebSocket, and provides a "pure Java" HTTP web server environment for Java code to run in.
+# Apache Tomcat packaged by Bitnami
 
+Apache Tomcat is an open-source web server designed to host and run Java-based web applications. It is a lightweight server with a good performance for applications running in production environments.
+
+[Overview of Apache Tomcat](http://tomcat.apache.org/)
+
+Trademarks: This software listing is packaged by Bitnami. The respective trademarks mentioned in the offering are owned by the respective companies, and use of them does not imply any affiliation or endorsement.
+                           
 ## TL;DR
 
 ```console
-$ helm repo add bitnami https://charts.bitnami.com/bitnami
-$ helm install my-release bitnami/tomcat
+$ helm repo add my-repo https://charts.bitnami.com/bitnami
+$ helm install my-release my-repo/tomcat
 ```
 
 ## Introduction
 
-This chart bootstraps a [Tomcat](https://github.com/bitnami/bitnami-docker-tomcat) deployment on a [Kubernetes](https://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
+This chart bootstraps a [Tomcat](https://github.com/bitnami/containers/tree/main/bitnami/tomcat) deployment on a [Kubernetes](https://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
-Bitnami charts can be used with [Kubeapps](https://kubeapps.com/) for deployment and management of Helm Charts in clusters. This Helm chart has been tested on top of [Bitnami Kubernetes Production Runtime](https://kubeprod.io/) (BKPR). Deploy BKPR to get automated TLS certificates, logging and monitoring for your applications.
+Tomcat implements several Java EE specifications including Java Servlet, JavaServer Pages, Java EL, and WebSocket, and provides a "pure Java" HTTP web server environment for Java code to run in.
+
+Bitnami charts can be used with [Kubeapps](https://kubeapps.dev/) for deployment and management of Helm Charts in clusters.
 
 ## Prerequisites
 
-- Kubernetes 1.12+
-- Helm 3.1.0
+- Kubernetes 1.19+
+- Helm 3.2.0+
 - PV provisioner support in the underlying infrastructure
 - ReadWriteMany volumes for deployment scaling
 
@@ -27,8 +35,8 @@ Bitnami charts can be used with [Kubeapps](https://kubeapps.com/) for deployment
 To install the chart with the release name `my-release`:
 
 ```console
-$ helm repo add bitnami https://charts.bitnami.com/bitnami
-$ helm install my-release bitnami/tomcat
+$ helm repo add my-repo https://charts.bitnami.com/bitnami
+$ helm install my-release my-repo/tomcat
 ```
 
 These commands deploy Tomcat on the Kubernetes cluster in the default configuration. The [Parameters](#parameters) section lists the parameters that can be configured during installation.
@@ -50,15 +58,16 @@ The command removes all the Kubernetes components associated with the chart and 
 ### Global parameters
 
 | Name                      | Description                                     | Value |
-|---------------------------|-------------------------------------------------|-------|
+| ------------------------- | ----------------------------------------------- | ----- |
 | `global.imageRegistry`    | Global Docker image registry                    | `""`  |
 | `global.imagePullSecrets` | Global Docker registry secret names as an array | `[]`  |
 | `global.storageClass`     | Global StorageClass for Persistent Volume(s)    | `""`  |
 
+
 ### Common parameters
 
 | Name                | Description                                                                                  | Value           |
-|---------------------|----------------------------------------------------------------------------------------------|-----------------|
+| ------------------- | -------------------------------------------------------------------------------------------- | --------------- |
 | `kubeVersion`       | Force target Kubernetes version (using Helm capabilities if not set)                         | `""`            |
 | `nameOverride`      | String to partially override common.names.fullname template (will maintain the release name) | `""`            |
 | `fullnameOverride`  | String to fully override common.names.fullname template                                      | `""`            |
@@ -67,91 +76,28 @@ The command removes all the Kubernetes components associated with the chart and 
 | `clusterDomain`     | Kubernetes Cluster Domain                                                                    | `cluster.local` |
 | `extraDeploy`       | Array of extra objects to deploy with the release                                            | `[]`            |
 
+
 ### Tomcat parameters
 
-| Name                          | Description                                                          | Value                  |
-|-------------------------------|----------------------------------------------------------------------|------------------------|
-| `image.registry`              | Tomcat image registry                                                | `docker.io`            |
-| `image.repository`            | Tomcat image repository                                              | `bitnami/tomcat`       |
-| `image.tag`                   | Tomcat image tag (immutable tags are recommended)                    | `10.0.14-debian-10-r0` |
-| `image.pullPolicy`            | Tomcat image pull policy                                             | `IfNotPresent`         |
-| `image.pullSecrets`           | Specify docker-registry secret names as an array                     | `[]`                   |
-| `image.debug`                 | Specify if debug logs should be enabled                              | `false`                |
-| `hostAliases`                 | Deployment pod host aliases                                          | `[]`                   |
-| `tomcatUsername`              | Tomcat admin user                                                    | `user`                 |
-| `tomcatPassword`              | Tomcat admin password                                                | `""`                   |
-| `tomcatAllowRemoteManagement` | Enable remote access to management interface                         | `0`                    |
-| `catalinaOpts`                | Java runtime option used by tomcat JVM                               | `""`                   |
-| `command`                     | Override default container command (useful when using custom images) | `[]`                   |
-| `args`                        | Override default container args (useful when using custom images)    | `[]`                   |
-| `extraEnvVars`                | Extra environment variables to be set on Tomcat container            | `[]`                   |
-| `extraEnvVarsCM`              | Name of existing ConfigMap containing extra environment variables    | `""`                   |
-| `extraEnvVarsSecret`          | Name of existing Secret containing extra environment variables       | `""`                   |
-
-### Tomcat deployment parameters
-
-| Name                                    | Description                                                                                                              | Value               |
-|-----------------------------------------|--------------------------------------------------------------------------------------------------------------------------|---------------------|
-| `replicaCount`                          | Specify number of Tomcat replicas                                                                                        | `1`                 |
-| `deployment.type`                       | Use Deployment or StatefulSet                                                                                            | `deployment`        |
-| `updateStrategy.type`                   | StrategyType                                                                                                             | `RollingUpdate`     |
-| `containerPorts.http`                   | HTTP port to expose at container level                                                                                   | `8080`              |
-| `containerExtraPorts`                   | Extra ports to expose at container level                                                                                 | `{}`                |
-| `podSecurityContext.enabled`            | Enable Tomcat pods' Security Context                                                                                     | `true`              |
-| `podSecurityContext.fsGroup`            | Set Tomcat pod's Security Context fsGroup                                                                                | `1001`              |
-| `containerSecurityContext.enabled`      | Enable Tomcat containers' SecurityContext                                                                                | `true`              |
-| `containerSecurityContext.runAsUser`    | User ID for the Tomcat container                                                                                         | `1001`              |
-| `containerSecurityContext.runAsNonRoot` | Force user to be root in Tomcat container                                                                                | `true`              |
-| `resources.limits`                      | The resources limits for the Tomcat container                                                                            | `{}`                |
-| `resources.requests`                    | The requested resources for the Tomcat container                                                                         | `{}`                |
-| `livenessProbe.enabled`                 | Enable livenessProbe                                                                                                     | `true`              |
-| `livenessProbe.initialDelaySeconds`     | Initial delay seconds for livenessProbe                                                                                  | `120`               |
-| `livenessProbe.periodSeconds`           | Period seconds for livenessProbe                                                                                         | `10`                |
-| `livenessProbe.timeoutSeconds`          | Timeout seconds for livenessProbe                                                                                        | `5`                 |
-| `livenessProbe.failureThreshold`        | Failure threshold for livenessProbe                                                                                      | `6`                 |
-| `livenessProbe.successThreshold`        | Success threshold for livenessProbe                                                                                      | `1`                 |
-| `readinessProbe.enabled`                | Enable readinessProbe                                                                                                    | `true`              |
-| `readinessProbe.initialDelaySeconds`    | Initial delay seconds for readinessProbe                                                                                 | `30`                |
-| `readinessProbe.periodSeconds`          | Period seconds for readinessProbe                                                                                        | `5`                 |
-| `readinessProbe.timeoutSeconds`         | Timeout seconds for readinessProbe                                                                                       | `3`                 |
-| `readinessProbe.failureThreshold`       | Failure threshold for readinessProbe                                                                                     | `3`                 |
-| `readinessProbe.successThreshold`       | Success threshold for readinessProbe                                                                                     | `1`                 |
-| `startupProbe.enabled`                  | Enable startupProbe                                                                                                      | `true`              |
-| `startupProbe.initialDelaySeconds`      | Initial delay seconds for startupProbe                                                                                   | `30`                |
-| `startupProbe.periodSeconds`            | Period seconds for startupProbe                                                                                          | `5`                 |
-| `startupProbe.timeoutSeconds`           | Timeout seconds for startupProbe                                                                                         | `3`                 |
-| `startupProbe.failureThreshold`         | Failure threshold for startupProbe                                                                                       | `3`                 |
-| `startupProbe.successThreshold`         | Success threshold for startupProbe                                                                                       | `1`                 |
-| `customLivenessProbe`                   | Override default liveness probe                                                                                          | `{}`                |
-| `customReadinessProbe`                  | Override default readiness probe                                                                                         | `{}`                |
-| `customStartupProbe`                    | Override default startup probe                                                                                           | `{}`                |
-| `podLabels`                             | Extra labels for Tomcat pods                                                                                             | `{}`                |
-| `podAnnotations`                        | Annotations for Tomcat pods                                                                                              | `{}`                |
-| `podAffinityPreset`                     | Pod affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`                                      | `""`                |
-| `podAntiAffinityPreset`                 | Pod anti-affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`                                 | `soft`              |
-| `nodeAffinityPreset.type`               | Node affinity preset type. Ignored if `affinity` is set. Allowed values: `soft` or `hard`                                | `""`                |
-| `nodeAffinityPreset.key`                | Node label key to match. Ignored if `affinity` is set.                                                                   | `""`                |
-| `nodeAffinityPreset.values`             | Node label values to match. Ignored if `affinity` is set.                                                                | `[]`                |
-| `affinity`                              | Affinity for pod assignment. Evaluated as a template.                                                                    | `{}`                |
-| `nodeSelector`                          | Node labels for pod assignment. Evaluated as a template.                                                                 | `{}`                |
-| `schedulerName`                         | Alternative scheduler                                                                                                    | `""`                |
-| `lifecycleHooks`                        | Override default etcd container hooks                                                                                    | `{}`                |
-| `podManagementPolicy`                   | podManagementPolicy to manage scaling operation of pods (only in StatefulSet mode)                                       | `""`                |
-| `tolerations`                           | Tolerations for pod assignment. Evaluated as a template.                                                                 | `[]`                |
-| `topologySpreadConstraints`             | Topology Spread Constraints for pod assignment spread across your cluster among failure-domains. Evaluated as a template | `[]`                |
-| `extraPodSpec`                          | Optionally specify extra PodSpec                                                                                         | `{}`                |
-| `extraVolumes`                          | Optionally specify extra list of additional volumes for Tomcat pods in Deployment                                        | `[]`                |
-| `extraVolumeClaimTemplates`             | Optionally specify extra list of additional volume claim templates for Tomcat pods in StatefulSet                        | `[]`                |
-| `extraVolumeMounts`                     | Optionally specify extra list of additional volumeMounts for Tomcat container(s)                                         | `[]`                |
-| `initContainers`                        | Add init containers to the Tomcat pods.                                                                                  | `[]`                |
-| `sidecars`                              | Add sidecars to the Tomcat pods.                                                                                         | `[]`                |
-| `persistence.enabled`                   | Enable persistence                                                                                                       | `true`              |
-| `persistence.storageClass`              | PVC Storage Class for Tomcat volume                                                                                      | `""`                |
-| `persistence.annotations`               | Persistent Volume Claim annotations                                                                                      | `{}`                |
-| `persistence.accessModes`               | PVC Access Modes for Tomcat volume                                                                                       | `["ReadWriteOnce"]` |
-| `persistence.size`                      | PVC Storage Request for Tomcat volume                                                                                    | `8Gi`               |
-| `persistence.existingClaim`             | An Existing PVC name for Tomcat volume                                                                                   | `""`                |
-| `persistence.selectorLabels`            | Selector labels to use in volume claim template in statefulset                                                           | `{}`                |
+| Name                          | Description                                                                                            | Value                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------ | --------------------- |
+| `image.registry`              | Tomcat image registry                                                                                  | `docker.io`           |
+| `image.repository`            | Tomcat image repository                                                                                | `bitnami/tomcat`      |
+| `image.tag`                   | Tomcat image tag (immutable tags are recommended)                                                      | `10.1.4-debian-11-r0` |
+| `image.digest`                | Tomcat image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag | `""`                  |
+| `image.pullPolicy`            | Tomcat image pull policy                                                                               | `IfNotPresent`        |
+| `image.pullSecrets`           | Specify docker-registry secret names as an array                                                       | `[]`                  |
+| `image.debug`                 | Specify if debug logs should be enabled                                                                | `false`               |
+| `hostAliases`                 | Deployment pod host aliases                                                                            | `[]`                  |
+| `tomcatUsername`              | Tomcat admin user                                                                                      | `user`                |
+| `tomcatPassword`              | Tomcat admin password                                                                                  | `""`                  |
+| `tomcatAllowRemoteManagement` | Enable remote access to management interface                                                           | `0`                   |
+| `catalinaOpts`                | Java runtime option used by tomcat JVM                                                                 | `""`                  |
+| `command`                     | Override default container command (useful when using custom images)                                   | `[]`                  |
+| `args`                        | Override default container args (useful when using custom images)                                      | `[]`                  |
+| `extraEnvVars`                | Extra environment variables to be set on Tomcat container                                              | `[]`                  |
+| `extraEnvVarsCM`              | Name of existing ConfigMap containing extra environment variables                                      | `""`                  |
+| `extraEnvVarsSecret`          | Name of existing Secret containing extra environment variables                                         | `""`                  |
 
 
 ### Tomcat deployment parameters
@@ -161,32 +107,36 @@ The command removes all the Kubernetes components associated with the chart and 
 | `replicaCount`                             | Specify number of Tomcat replicas                                                                                        | `1`                 |
 | `deployment.type`                          | Use Deployment or StatefulSet                                                                                            | `deployment`        |
 | `updateStrategy.type`                      | StrategyType                                                                                                             | `RollingUpdate`     |
-| `containerPort`                            | HTTP port to expose at container level                                                                                   | `8080`              |
-| `containerExtraPorts`                      | Extra ports to expose at container level                                                                                 | `{}`                |
+| `containerPorts.http`                      | HTTP port to expose at container level                                                                                   | `8080`              |
+| `containerExtraPorts`                      | Extra ports to expose at container level                                                                                 | `[]`                |
 | `podSecurityContext.enabled`               | Enable Tomcat pods' Security Context                                                                                     | `true`              |
 | `podSecurityContext.fsGroup`               | Set Tomcat pod's Security Context fsGroup                                                                                | `1001`              |
 | `containerSecurityContext.enabled`         | Enable Tomcat containers' SecurityContext                                                                                | `true`              |
 | `containerSecurityContext.runAsUser`       | User ID for the Tomcat container                                                                                         | `1001`              |
+| `containerSecurityContext.runAsNonRoot`    | Force user to be root in Tomcat container                                                                                | `true`              |
 | `resources.limits`                         | The resources limits for the Tomcat container                                                                            | `{}`                |
 | `resources.requests`                       | The requested resources for the Tomcat container                                                                         | `{}`                |
 | `livenessProbe.enabled`                    | Enable livenessProbe                                                                                                     | `true`              |
-| `livenessProbe.httpGet.path`               | Request path for livenessProbe                                                                                           | `/`                 |
-| `livenessProbe.httpGet.port`               | Port for livenessProbe                                                                                                   | `http`              |
 | `livenessProbe.initialDelaySeconds`        | Initial delay seconds for livenessProbe                                                                                  | `120`               |
 | `livenessProbe.periodSeconds`              | Period seconds for livenessProbe                                                                                         | `10`                |
 | `livenessProbe.timeoutSeconds`             | Timeout seconds for livenessProbe                                                                                        | `5`                 |
 | `livenessProbe.failureThreshold`           | Failure threshold for livenessProbe                                                                                      | `6`                 |
 | `livenessProbe.successThreshold`           | Success threshold for livenessProbe                                                                                      | `1`                 |
 | `readinessProbe.enabled`                   | Enable readinessProbe                                                                                                    | `true`              |
-| `readinessProbe.httpGet.path`              | Request path for readinessProbe                                                                                          | `/`                 |
-| `readinessProbe.httpGet.port`              | Port for readinessProbe                                                                                                  | `http`              |
 | `readinessProbe.initialDelaySeconds`       | Initial delay seconds for readinessProbe                                                                                 | `30`                |
 | `readinessProbe.periodSeconds`             | Period seconds for readinessProbe                                                                                        | `5`                 |
 | `readinessProbe.timeoutSeconds`            | Timeout seconds for readinessProbe                                                                                       | `3`                 |
 | `readinessProbe.failureThreshold`          | Failure threshold for readinessProbe                                                                                     | `3`                 |
 | `readinessProbe.successThreshold`          | Success threshold for readinessProbe                                                                                     | `1`                 |
+| `startupProbe.enabled`                     | Enable startupProbe                                                                                                      | `false`             |
+| `startupProbe.initialDelaySeconds`         | Initial delay seconds for startupProbe                                                                                   | `30`                |
+| `startupProbe.periodSeconds`               | Period seconds for startupProbe                                                                                          | `5`                 |
+| `startupProbe.timeoutSeconds`              | Timeout seconds for startupProbe                                                                                         | `3`                 |
+| `startupProbe.failureThreshold`            | Failure threshold for startupProbe                                                                                       | `3`                 |
+| `startupProbe.successThreshold`            | Success threshold for startupProbe                                                                                       | `1`                 |
 | `customLivenessProbe`                      | Override default liveness probe                                                                                          | `{}`                |
 | `customReadinessProbe`                     | Override default readiness probe                                                                                         | `{}`                |
+| `customStartupProbe`                       | Override default startup probe                                                                                           | `{}`                |
 | `podLabels`                                | Extra labels for Tomcat pods                                                                                             | `{}`                |
 | `podAnnotations`                           | Annotations for Tomcat pods                                                                                              | `{}`                |
 | `podAffinityPreset`                        | Pod affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`                                      | `""`                |
@@ -196,6 +146,9 @@ The command removes all the Kubernetes components associated with the chart and 
 | `nodeAffinityPreset.values`                | Node label values to match. Ignored if `affinity` is set.                                                                | `[]`                |
 | `affinity`                                 | Affinity for pod assignment. Evaluated as a template.                                                                    | `{}`                |
 | `nodeSelector`                             | Node labels for pod assignment. Evaluated as a template.                                                                 | `{}`                |
+| `schedulerName`                            | Alternative scheduler                                                                                                    | `""`                |
+| `lifecycleHooks`                           | Override default etcd container hooks                                                                                    | `{}`                |
+| `podManagementPolicy`                      | podManagementPolicy to manage scaling operation of pods (only in StatefulSet mode)                                       | `""`                |
 | `tolerations`                              | Tolerations for pod assignment. Evaluated as a template.                                                                 | `[]`                |
 | `topologySpreadConstraints`                | Topology Spread Constraints for pod assignment spread across your cluster among failure-domains. Evaluated as a template | `[]`                |
 | `extraPodSpec`                             | Optionally specify extra PodSpec                                                                                         | `{}`                |
@@ -219,7 +172,7 @@ The command removes all the Kubernetes components associated with the chart and 
 ### Traffic Exposure parameters
 
 | Name                               | Description                                                                                                                      | Value                    |
-|------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|--------------------------|
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
 | `service.type`                     | Kubernetes Service type                                                                                                          | `LoadBalancer`           |
 | `service.ports.http`               | Service HTTP port                                                                                                                | `80`                     |
 | `service.nodePorts.http`           | Kubernetes http node port                                                                                                        | `""`                     |
@@ -229,6 +182,8 @@ The command removes all the Kubernetes components associated with the chart and 
 | `service.loadBalancerSourceRanges` | Service Load Balancer sources                                                                                                    | `[]`                     |
 | `service.externalTrafficPolicy`    | Enable client source IP preservation                                                                                             | `Cluster`                |
 | `service.annotations`              | Annotations for Tomcat service                                                                                                   | `{}`                     |
+| `service.sessionAffinity`          | Session Affinity for Kubernetes service, can be "None" or "ClientIP"                                                             | `None`                   |
+| `service.sessionAffinityConfig`    | Additional settings for the sessionAffinity                                                                                      | `{}`                     |
 | `ingress.enabled`                  | Enable ingress controller resource                                                                                               | `false`                  |
 | `ingress.hostname`                 | Default host for the ingress resource                                                                                            | `tomcat.local`           |
 | `ingress.annotations`              | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. | `{}`                     |
@@ -239,62 +194,69 @@ The command removes all the Kubernetes components associated with the chart and 
 | `ingress.selfSigned`               | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
 | `ingress.ingressClassName`         | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
 | `ingress.secrets`                  | If you're providing your own certificates, please use this to add the certificates as secrets                                    | `[]`                     |
+| `ingress.extraRules`               | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
 | `ingress.apiVersion`               | Force Ingress API version (automatically detected if not set)                                                                    | `""`                     |
 | `ingress.path`                     | Ingress path                                                                                                                     | `/`                      |
 | `ingress.pathType`                 | Ingress path type                                                                                                                | `ImplementationSpecific` |
 
+
 ### Volume Permissions parameters
 
-| Name                                   | Description                                                                 | Value                   |
-|----------------------------------------|-----------------------------------------------------------------------------|-------------------------|
-| `volumePermissions.enabled`            | Enable init container that changes volume permissions in the data directory | `false`                 |
-| `volumePermissions.image.registry`     | Init container volume-permissions image registry                            | `docker.io`             |
-| `volumePermissions.image.repository`   | Init container volume-permissions image repository                          | `bitnami/bitnami-shell` |
-| `volumePermissions.image.tag`          | Init container volume-permissions image tag                                 | `10-debian-10-r273`     |
-| `volumePermissions.image.pullPolicy`   | Init container volume-permissions image pull policy                         | `IfNotPresent`          |
-| `volumePermissions.image.pullSecrets`  | Specify docker-registry secret names as an array                            | `[]`                    |
-| `volumePermissions.resources.limits`   | Init container volume-permissions resource  limits                          | `{}`                    |
-| `volumePermissions.resources.requests` | Init container volume-permissions resource  requests                        | `{}`                    |
+| Name                                   | Description                                                                                                                       | Value                   |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `volumePermissions.enabled`            | Enable init container that changes volume permissions in the data directory                                                       | `false`                 |
+| `volumePermissions.image.registry`     | Init container volume-permissions image registry                                                                                  | `docker.io`             |
+| `volumePermissions.image.repository`   | Init container volume-permissions image repository                                                                                | `bitnami/bitnami-shell` |
+| `volumePermissions.image.tag`          | Init container volume-permissions image tag                                                                                       | `11-debian-11-r60`      |
+| `volumePermissions.image.digest`       | Init container volume-permissions image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag | `""`                    |
+| `volumePermissions.image.pullPolicy`   | Init container volume-permissions image pull policy                                                                               | `IfNotPresent`          |
+| `volumePermissions.image.pullSecrets`  | Specify docker-registry secret names as an array                                                                                  | `[]`                    |
+| `volumePermissions.resources.limits`   | Init container volume-permissions resource  limits                                                                                | `{}`                    |
+| `volumePermissions.resources.requests` | Init container volume-permissions resource  requests                                                                              | `{}`                    |
 
 
 ### Metrics parameters
 
-| Name                                      | Description                                                                                          | Value                                                                                                                                                                                                               |
-| ----------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `metrics.jmx.enabled`                     | Whether or not to expose JMX metrics to Prometheus                                                   | `false`                                                                                                                                                                                                             |
-| `metrics.jmx.catalinaOpts`                | custom option used to enabled JMX on tomcat jvm evaluated as template                                | `-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=5555 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.local.only=true` |
-| `metrics.jmx.image.registry`              | JMX exporter image registry                                                                          | `docker.io`                                                                                                                                                                                                         |
-| `metrics.jmx.image.repository`            | JMX exporter image repository                                                                        | `bitnami/jmx-exporter`                                                                                                                                                                                              |
-| `metrics.jmx.image.tag`                   | JMX exporter image tag (immutable tags are recommended)                                              | `0.16.1-debian-10-r143`                                                                                                                                                                                             |
-| `metrics.jmx.image.pullPolicy`            | JMX exporter image pull policy                                                                       | `IfNotPresent`                                                                                                                                                                                                      |
-| `metrics.jmx.image.pullSecrets`           | Specify docker-registry secret names as an array                                                     | `[]`                                                                                                                                                                                                                |
-| `metrics.jmx.config`                      | Configuration file for JMX exporter                                                                  | `""`                                                                                                                                                                                                                |
-| `metrics.jmx.resources.limits`            | JMX Exporter container resource limits                                                               | `{}`                                                                                                                                                                                                                |
-| `metrics.jmx.resources.requests`          | JMX Exporter container resource requests                                                             | `{}`                                                                                                                                                                                                                |
-| `metrics.jmx.ports.metrics`               | JMX Exporter container metrics ports                                                                 | `5556`                                                                                                                                                                                                              |
-| `metrics.jmx.existingConfigmap`           | Name of existing ConfigMap with JMX exporter configuration                                           | `""`                                                                                                                                                                                                                |
-| `metrics.podMonitor.podTargetLabels`      | Used to keep given pod's labels in target                                                            | `[]`                                                                                                                                                                                                                |
-| `metrics.podMonitor.enabled`              | Create PodMonitor Resource for scraping metrics using PrometheusOperator                             | `false`                                                                                                                                                                                                             |
-| `metrics.podMonitor.namespace`            | Namespace in which Prometheus is running                                                             | `monitoring`                                                                                                                                                                                                        |
-| `metrics.podMonitor.interval`             | Specify the interval at which metrics should be scraped                                              | `30s`                                                                                                                                                                                                               |
-| `metrics.podMonitor.scrapeTimeout`        | Specify the timeout after which the scrape is ended                                                  | `30s`                                                                                                                                                                                                               |
-| `metrics.podMonitor.additionalLabels`     | Additional labels that can be used so PodMonitors will be discovered by Prometheus                   | `{}`                                                                                                                                                                                                                |
-| `metrics.podMonitor.scheme`               | Scheme to use for scraping                                                                           | `http`                                                                                                                                                                                                              |
-| `metrics.podMonitor.tlsConfig`            | TLS configuration used for scrape endpoints used by Prometheus                                       | `{}`                                                                                                                                                                                                                |
-| `metrics.podMonitor.relabelings`          | Prometheus relabeling rules                                                                          | `[]`                                                                                                                                                                                                                |
-| `metrics.prometheusRule.enabled`          | Set this to true to create prometheusRules for Prometheus operator                                   | `false`                                                                                                                                                                                                             |
-| `metrics.prometheusRule.additionalLabels` | Additional labels that can be used so prometheusRules will be discovered by Prometheus               | `{}`                                                                                                                                                                                                                |
-| `metrics.prometheusRule.namespace`        | namespace where prometheusRules resource should be created                                           | `""`                                                                                                                                                                                                                |
-| `metrics.prometheusRule.rules`            | Create specified [Rules](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/) | `[]`                                                                                                                                                                                                                |
+| Name                                                | Description                                                                                                  | Value                                                                                                                                                                                                               |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `metrics.jmx.enabled`                               | Whether or not to expose JMX metrics to Prometheus                                                           | `false`                                                                                                                                                                                                             |
+| `metrics.jmx.catalinaOpts`                          | custom option used to enabled JMX on tomcat jvm evaluated as template                                        | `-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=5555 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.local.only=true` |
+| `metrics.jmx.image.registry`                        | JMX exporter image registry                                                                                  | `docker.io`                                                                                                                                                                                                         |
+| `metrics.jmx.image.repository`                      | JMX exporter image repository                                                                                | `bitnami/jmx-exporter`                                                                                                                                                                                              |
+| `metrics.jmx.image.tag`                             | JMX exporter image tag (immutable tags are recommended)                                                      | `0.17.2-debian-11-r26`                                                                                                                                                                                              |
+| `metrics.jmx.image.digest`                          | JMX exporter image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag | `""`                                                                                                                                                                                                                |
+| `metrics.jmx.image.pullPolicy`                      | JMX exporter image pull policy                                                                               | `IfNotPresent`                                                                                                                                                                                                      |
+| `metrics.jmx.image.pullSecrets`                     | Specify docker-registry secret names as an array                                                             | `[]`                                                                                                                                                                                                                |
+| `metrics.jmx.config`                                | Configuration file for JMX exporter                                                                          | `""`                                                                                                                                                                                                                |
+| `metrics.jmx.containerSecurityContext.enabled`      | Enable Prometheus JMX exporter containers' Security Context                                                  | `true`                                                                                                                                                                                                              |
+| `metrics.jmx.containerSecurityContext.runAsUser`    | Set Prometheus JMX exporter containers' Security Context runAsUser                                           | `1001`                                                                                                                                                                                                              |
+| `metrics.jmx.containerSecurityContext.runAsNonRoot` | Set Prometheus JMX exporter containers' Security Context runAsNonRoot                                        | `true`                                                                                                                                                                                                              |
+| `metrics.jmx.resources.limits`                      | JMX Exporter container resource limits                                                                       | `{}`                                                                                                                                                                                                                |
+| `metrics.jmx.resources.requests`                    | JMX Exporter container resource requests                                                                     | `{}`                                                                                                                                                                                                                |
+| `metrics.jmx.ports.metrics`                         | JMX Exporter container metrics ports                                                                         | `5556`                                                                                                                                                                                                              |
+| `metrics.jmx.existingConfigmap`                     | Name of existing ConfigMap with JMX exporter configuration                                                   | `""`                                                                                                                                                                                                                |
+| `metrics.podMonitor.podTargetLabels`                | Used to keep given pod's labels in target                                                                    | `[]`                                                                                                                                                                                                                |
+| `metrics.podMonitor.enabled`                        | Create PodMonitor Resource for scraping metrics using PrometheusOperator                                     | `false`                                                                                                                                                                                                             |
+| `metrics.podMonitor.namespace`                      | Optional namespace in which Prometheus is running                                                            | `""`                                                                                                                                                                                                                |
+| `metrics.podMonitor.interval`                       | Specify the interval at which metrics should be scraped                                                      | `30s`                                                                                                                                                                                                               |
+| `metrics.podMonitor.scrapeTimeout`                  | Specify the timeout after which the scrape is ended                                                          | `30s`                                                                                                                                                                                                               |
+| `metrics.podMonitor.additionalLabels`               | Additional labels that can be used so PodMonitors will be discovered by Prometheus                           | `{}`                                                                                                                                                                                                                |
+| `metrics.podMonitor.scheme`                         | Scheme to use for scraping                                                                                   | `http`                                                                                                                                                                                                              |
+| `metrics.podMonitor.tlsConfig`                      | TLS configuration used for scrape endpoints used by Prometheus                                               | `{}`                                                                                                                                                                                                                |
+| `metrics.podMonitor.relabelings`                    | Prometheus relabeling rules                                                                                  | `[]`                                                                                                                                                                                                                |
+| `metrics.prometheusRule.enabled`                    | Set this to true to create prometheusRules for Prometheus operator                                           | `false`                                                                                                                                                                                                             |
+| `metrics.prometheusRule.additionalLabels`           | Additional labels that can be used so prometheusRules will be discovered by Prometheus                       | `{}`                                                                                                                                                                                                                |
+| `metrics.prometheusRule.namespace`                  | namespace where prometheusRules resource should be created                                                   | `""`                                                                                                                                                                                                                |
+| `metrics.prometheusRule.rules`                      | Create specified [Rules](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/)         | `[]`                                                                                                                                                                                                                |
 
 
-The above parameters map to the env variables defined in [bitnami/tomcat](https://github.com/bitnami/bitnami-docker-tomcat). For more information please refer to the [bitnami/tomcat](https://github.com/bitnami/bitnami-docker-tomcat) image documentation.
+The above parameters map to the env variables defined in [bitnami/tomcat](https://github.com/bitnami/containers/tree/main/bitnami/tomcat). For more information please refer to the [bitnami/tomcat](https://github.com/bitnami/containers/tree/main/bitnami/tomcat) image documentation.
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
 ```console
 $ helm install my-release \
-  --set tomcatUsername=manager,tomcatPassword=password bitnami/tomcat
+  --set tomcatUsername=manager,tomcatPassword=password my-repo/tomcat
 ```
 
 The above command sets the Tomcat management username and password to `manager` and `password` respectively.
@@ -304,7 +266,7 @@ The above command sets the Tomcat management username and password to `manager` 
 Alternatively, a YAML file that specifies the values for the parameters can be provided while installing the chart. For example,
 
 ```console
-$ helm install my-release -f values.yaml bitnami/tomcat
+$ helm install my-release -f values.yaml my-repo/tomcat
 ```
 
 > **Tip**: You can use the default [values.yaml](values.yaml)
@@ -343,11 +305,11 @@ Refer to the chart documentation for more information on, and examples of, confi
 
 This chart allows you to set custom Pod affinity using the `affinity` parameter. Find more information about Pod's affinity in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity).
 
-As an alternative, use one of the preset configurations for pod affinity, pod anti-affinity, and node affinity available at the [bitnami/common](https://github.com/bitnami/charts/tree/master/bitnami/common#affinities) chart. To do so, set the `podAffinityPreset`, `podAntiAffinityPreset`, or `nodeAffinityPreset` parameters.
+As an alternative, use one of the preset configurations for pod affinity, pod anti-affinity, and node affinity available at the [bitnami/common](https://github.com/bitnami/charts/tree/main/bitnami/common#affinities) chart. To do so, set the `podAffinityPreset`, `podAntiAffinityPreset`, or `nodeAffinityPreset` parameters.
 
 ## Persistence
 
-The [Bitnami Tomcat](https://github.com/bitnami/bitnami-docker-tomcat) image stores the Tomcat data and configurations at the `/bitnami/tomcat` path of the container.
+The [Bitnami Tomcat](https://github.com/bitnami/containers/tree/main/bitnami/tomcat) image stores the Tomcat data and configurations at the `/bitnami/tomcat` path of the container.
 
 Persistent Volume Claims (PVCs) are used to keep the data across deployments. This is known to work in GCE, AWS, and minikube.
 
@@ -364,7 +326,7 @@ You can enable this init container by setting `volumePermissions.enabled` to `tr
 
 ## Troubleshooting
 
-Find more information about how to deal with common errors related to Bitnami’s Helm charts in [this troubleshooting guide](https://docs.bitnami.com/general/how-to/troubleshoot-helm-chart-issues).
+Find more information about how to deal with common errors related to Bitnami's Helm charts in [this troubleshooting guide](https://docs.bitnami.com/general/how-to/troubleshoot-helm-chart-issues).
 
 ## Upgrading
 
@@ -381,16 +343,16 @@ No issues should be expected when upgrading.
 
 - Chart labels were adapted to follow the [Helm charts standard labels](https://helm.sh/docs/chart_best_practices/labels/#standard-labels).
 - Ingress configuration was also adapted to follow the Helm charts best practices.
-- This version also introduces `bitnami/common`, a [library chart](https://helm.sh/docs/topics/library_charts/#helm) as a dependency. More documentation about this new utility could be found [here](https://github.com/bitnami/charts/tree/master/bitnami/common#bitnami-common-library-chart). Please, make sure that you have updated the chart dependencies before executing any upgrade.
+- This version also introduces `bitnami/common`, a [library chart](https://helm.sh/docs/topics/library_charts/#helm) as a dependency. More documentation about this new utility could be found [here](https://github.com/bitnami/charts/tree/main/bitnami/common#bitnami-common-library-chart). Please, make sure that you have updated the chart dependencies before executing any upgrade.
 
 Consequences:
 
 - Backwards compatibility is not guaranteed. However, you can easily workaround this issue by removing Tomcat deployment before upgrading (the following example assumes that the release name is `tomcat`):
 
 ```console
-$ export TOMCAT_PASSWORD=$(kubectl get secret --namespace default tomcat -o jsonpath="{.data.tomcat-password}" | base64 --decode)
+$ export TOMCAT_PASSWORD=$(kubectl get secret --namespace default tomcat -o jsonpath="{.data.tomcat-password}" | base64 -d)
 $ kubectl delete deployments.apps tomcat
-$ helm upgrade tomcat bitnami/tomcat --set tomcatPassword=$TOMCAT_PASSWORD
+$ helm upgrade tomcat my-repo/tomcat --set tomcatPassword=$TOMCAT_PASSWORD
 ```
 
 ### To 7.0.0
@@ -408,13 +370,13 @@ This release updates the Bitnami Tomcat container to `9.0.26-debian-9-r0`, which
 Tomcat container was moved to a non-root approach. There shouldn't be any issue when upgrading since the corresponding `securityContext` is enabled by default. Both the container image and the chart can be upgraded by running the command below:
 
 ```
-$ helm upgrade my-release bitnami/tomcat
+$ helm upgrade my-release my-repo/tomcat
 ```
 
 If you use a previous container image (previous to **8.5.35-r26**) disable the `securityContext` by running the command below:
 
 ```
-$ helm upgrade my-release bitnami/tomcat --set securityContext.enabled=false,image.tag=XXX
+$ helm upgrade my-release my-repo/tomcat --set securityContext.enabled=false,image.tag=XXX
 ```
 
 ### To 1.0.0

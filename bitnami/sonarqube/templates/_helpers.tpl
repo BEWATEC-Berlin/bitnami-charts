@@ -1,5 +1,5 @@
 {{/*
-Return the proper SonarQube image name
+Return the proper SonarQube(TM) image name
 */}}
 {{- define "sonarqube.image" -}}
 {{ include "common.images.image" (dict "imageRoot" .Values.image "global" .Values.global) }}
@@ -38,7 +38,7 @@ Create the name of the service account to use
 */}}
 {{- define "sonarqube.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create -}}
-    {{ default (printf "%s-foo" (include "common.names.fullname" .)) .Values.serviceAccount.name }}
+    {{ default (include "common.names.fullname" .) .Values.serviceAccount.name }}
 {{- else -}}
     {{ default "default" .Values.serviceAccount.name }}
 {{- end -}}
@@ -49,29 +49,21 @@ Create a default fully qualified app name for PostgreSQL
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "sonarqube.postgresql.fullname" -}}
-{{- printf "%s-%s" .Release.Name "postgresql" | trunc 63 | trimSuffix "-" -}}
+{{- include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" $) -}}
 {{- end -}}
 
 {{/*
 Return the Database Hostname
 */}}
 {{- define "sonarqube.database.host" -}}
-{{- if .Values.postgresql.enabled }}
-    {{- printf "%s" (include "sonarqube.postgresql.fullname" .) -}}
-{{- else -}}
-    {{- .Values.externalDatabase.host  -}}
-{{- end -}}
+{{- ternary (include "sonarqube.postgresql.fullname" .) .Values.externalDatabase.host .Values.postgresql.enabled -}}
 {{- end -}}
 
 {{/*
 Return the Database Port
 */}}
 {{- define "sonarqube.database.port" -}}
-{{- if .Values.postgresql.enabled }}
-    {{- printf "5432" -}}
-{{- else -}}
-    {{- .Values.externalDatabase.port -}}
-{{- end -}}
+{{- ternary "5432" .Values.externalDatabase.port .Values.postgresql.enabled -}}
 {{- end -}}
 
 {{/*
@@ -79,7 +71,15 @@ Return the Database Name
 */}}
 {{- define "sonarqube.database.name" -}}
 {{- if .Values.postgresql.enabled }}
-    {{- printf "%s" .Values.postgresql.postgresqlDatabase -}}
+    {{- if .Values.global.postgresql }}
+        {{- if .Values.global.postgresql.auth }}
+            {{- coalesce .Values.global.postgresql.auth.database .Values.postgresql.auth.database -}}
+        {{- else -}}
+            {{- .Values.postgresql.auth.database -}}
+        {{- end -}}
+    {{- else -}}
+        {{- .Values.postgresql.auth.database -}}
+    {{- end -}}
 {{- else -}}
     {{- .Values.externalDatabase.database -}}
 {{- end -}}
@@ -90,7 +90,15 @@ Return the Database User
 */}}
 {{- define "sonarqube.database.username" -}}
 {{- if .Values.postgresql.enabled }}
-    {{- printf "%s" .Values.postgresql.postgresqlUsername -}}
+    {{- if .Values.global.postgresql }}
+        {{- if .Values.global.postgresql.auth }}
+            {{- coalesce .Values.global.postgresql.auth.username .Values.postgresql.auth.username -}}
+        {{- else -}}
+            {{- .Values.postgresql.auth.username -}}
+        {{- end -}}
+    {{- else -}}
+        {{- .Values.postgresql.auth.username -}}
+    {{- end -}}
 {{- else -}}
     {{- .Values.externalDatabase.user -}}
 {{- end -}}
@@ -101,20 +109,26 @@ Return the Database Secret Name
 */}}
 {{- define "sonarqube.database.secretName" -}}
 {{- if .Values.postgresql.enabled }}
-    {{- if .Values.postgresql.existingSecret -}}
-        {{- printf "%s" .Values.postgresql.existingSecret -}}
+    {{- if .Values.global.postgresql }}
+        {{- if .Values.global.postgresql.auth }}
+            {{- if .Values.global.postgresql.auth.existingSecret }}
+                {{- tpl .Values.global.postgresql.auth.existingSecret $ -}}
+            {{- else -}}
+                {{- default (include "sonarqube.postgresql.fullname" .) (tpl .Values.postgresql.auth.existingSecret $) -}}
+            {{- end -}}
+        {{- else -}}
+            {{- default (include "sonarqube.postgresql.fullname" .) (tpl .Values.postgresql.auth.existingSecret $) -}}
+        {{- end -}}
     {{- else -}}
-        {{- printf "%s" (include "sonarqube.postgresql.fullname" .) -}}
+        {{- default (include "sonarqube.postgresql.fullname" .) (tpl .Values.postgresql.auth.existingSecret $) -}}
     {{- end -}}
-{{- else if .Values.externalDatabase.existingSecret -}}
-    {{- printf "%s" .Values.externalDatabase.existingSecret -}}
 {{- else -}}
-    {{- printf "%s-externaldb" (include "common.names.fullname" .) -}}
+    {{- default (printf "%s-externaldb" (include "common.names.fullname" .)) (tpl .Values.externalDatabase.existingSecret $) -}}
 {{- end -}}
 {{- end -}}
 
 {{/*
-Return true if a SonarQube authentication credentials secret object should be created
+Return true if a SonarQube(TM) authentication credentials secret object should be created
 */}}
 {{- define "sonarqube.createSecret" -}}
 {{- if or (not .Values.existingSecret) (and (not .Values.smtpExistingSecret) .Values.smtpPassword) }}
@@ -123,7 +137,7 @@ Return true if a SonarQube authentication credentials secret object should be cr
 {{- end -}}
 
 {{/*
-Return the SonarQube Secret Name
+Return the SonarQube(TM) Secret Name
 */}}
 {{- define "sonarqube.secretName" -}}
 {{- if .Values.existingSecret }}
@@ -156,16 +170,6 @@ fi
 {{- end -}}
 
 {{/*
-Return true if cert-manager required annotations for TLS signed certificates are set in the Ingress annotations
-Ref: https://cert-manager.io/docs/usage/ingress/#supported-annotations
-*/}}
-{{- define "sonarqube.ingress.certManagerRequest" -}}
-{{ if or (hasKey . "cert-manager.io/cluster-issuer") (hasKey . "cert-manager.io/issuer") }}
-    {{- true -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
 Compile all warnings into a single message.
 */}}
 {{- define "sonarqube.validateValues" -}}
@@ -179,7 +183,7 @@ Compile all warnings into a single message.
 {{- end -}}
 {{- end -}}
 
-{{/* Validate values of SonarQube - Database */}}
+{{/* Validate values of SonarQube(TM) - Database */}}
 {{- define "sonarqube.validateValues.database" -}}
 {{- if and (not .Values.postgresql.enabled) (or (empty .Values.externalDatabase.host) (empty .Values.externalDatabase.port) (empty .Values.externalDatabase.database)) -}}
 sonarqube: database

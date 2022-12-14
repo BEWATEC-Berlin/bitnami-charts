@@ -2,6 +2,7 @@
 ## Global Docker image parameters
 ## Please, note that this will override the image parameters, including dependencies, configured to use the global value
 ## Current available global Docker image parameters: imageRegistry, imagePullSecrets and storageClass
+##
 
 ## @param global.imageRegistry Global Docker image registry
 ## @param global.imagePullSecrets [array] Global Docker registry secret names as an array
@@ -17,6 +18,7 @@ global:
   storageClass: ""
 
 ## @section Common parameters
+##
 
 ## @param kubeVersion Force target Kubernetes version (using Helm capabilities if not set)
 ##
@@ -56,25 +58,27 @@ diagnosticMode:
     - infinity
 
 ## @section etcd parameters
+##
 
 ## Bitnami etcd image version
 ## ref: https://hub.docker.com/r/bitnami/etcd/tags/
 ## @param image.registry etcd image registry
 ## @param image.repository etcd image name
 ## @param image.tag etcd image tag
-## @param image.pullPolicy etcd image pull policy
-## @param image.pullSecrets [array] etcd image pull secrets
-## @param image.debug Enable image debug mode
+## @param image.digest etcd image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
 ##
 image:
   registry: docker.io
   repository: bitnami/etcd
-  tag: 3.5.1-debian-10-r83
+  tag: 3.5.6-debian-11-r0
+  digest: ""
+  ## @param image.pullPolicy etcd image pull policy
   ## Specify a imagePullPolicy
   ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
   ##
   pullPolicy: IfNotPresent
+  ## @param image.pullSecrets [array] etcd image pull secrets
   ## Optionally specify an array of imagePullSecrets.
   ## Secrets must be manually created in the namespace.
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
@@ -83,6 +87,7 @@ image:
   ##   - myRegistryKeySecretName
   ##
   pullSecrets: []
+  ## @param image.debug Enable image debug mode
   ## Set to true if you would like to see extra information on logs
   ##
   debug: false
@@ -93,9 +98,9 @@ auth:
   ## ref: https://etcd.io/docs/current/op-guide/authentication/
   ##
   rbac:
-    ## @param auth.rbac.enabled Switch to enable RBAC authentication
+    ## @param auth.rbac.create Switch to enable RBAC authentication
     ##
-    enabled: true
+    create: true
     ## @param auth.rbac.allowNoneAuthentication Allow to use etcd without configuring RBAC authentication
     ##
     allowNoneAuthentication: true
@@ -184,8 +189,8 @@ auth:
     ## If not specified and `auth.peer.enableAuthentication=true` or `rbac.enabled=true`, the default is is `ca.crt`
     ##
     caFilename: ""
-## @param autoCompactionMode Auto compaction mode, by default periodic. Valid values: ‘periodic’, ‘revision’.
-## - 'periodic' for duration based retention, defaulting to hours if no time unit is provided (e.g. ‘5m’).
+## @param autoCompactionMode Auto compaction mode, by default periodic. Valid values: "periodic", "revision".
+## - 'periodic' for duration based retention, defaulting to hours if no time unit is provided (e.g. 5m).
 ## - 'revision' for revision number based retention.
 ##
 autoCompactionMode: ""
@@ -198,6 +203,9 @@ autoCompactionRetention: ""
 ## - 'existing': when upgrading the chart ('helm upgrade ...')
 ##
 initialClusterState: ""
+## @param logLevel Sets the log level for the etcd process. Allowed values: 'debug', 'info', 'warn', 'error', 'panic', 'fatal'
+##
+logLevel: "info"
 ## @param maxProcs Limits the number of operating system threads that can execute user-level
 ## Go code simultaneously by setting GOMAXPROCS environment variable
 ## ref: https://golang.org/pkg/runtime
@@ -240,6 +248,8 @@ command: []
 args: []
 
 ## @section etcd statefulset parameters
+##
+
 
 ## @param replicaCount Number of etcd replicas to deploy
 ##
@@ -281,11 +291,13 @@ podSecurityContext:
 ## @param containerSecurityContext.enabled Enabled etcd containers' Security Context
 ## @param containerSecurityContext.runAsUser Set etcd container's Security Context runAsUser
 ## @param containerSecurityContext.runAsNonRoot Set etcd container's Security Context runAsNonRoot
+## @param containerSecurityContext.allowPrivilegeEscalation Force the child process to be run as nonprivilege
 ##
 containerSecurityContext:
   enabled: true
   runAsUser: 1001
   runAsNonRoot: true
+  allowPrivilegeEscalation: false
 ## etcd containers' resource requests and limits
 ## ref: https://kubernetes.io/docs/user-guide/compute-resources/
 ## We usually recommend not to specify default resources and to leave this as a conscious
@@ -300,6 +312,7 @@ resources:
   ## limits:
   ##    cpu: 500m
   ##    memory: 1Gi
+  ##
   limits: {}
   requests: {}
 ## Configure extra options for liveness probe
@@ -447,8 +460,26 @@ schedulerName: ""
 ## Ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
 ##
 priorityClassName: ""
-
+## @param runtimeClassName Name of the runtime class to be used by pod(s)
+## ref: https://kubernetes.io/docs/concepts/containers/runtime-class/
+##
+runtimeClassName: ""
+## @param topologySpreadConstraints Topology Spread Constraints for pod assignment
+## https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+## The value is evaluated as a template
+##
+topologySpreadConstraints: []
+## persistentVolumeClaimRetentionPolicy
+## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#persistentvolumeclaim-retention
+## @param persistentVolumeClaimRetentionPolicy.enabled Controls if and how PVCs are deleted during the lifecycle of a StatefulSet
+## @param persistentVolumeClaimRetentionPolicy.whenScaled Volume retention behavior when the replica count of the StatefulSet is reduced
+## @param persistentVolumeClaimRetentionPolicy.whenDeleted Volume retention behavior that applies when the StatefulSet is deleted
+persistentVolumeClaimRetentionPolicy:
+  enabled: false
+  whenScaled: Retain
+  whenDeleted: Retain
 ## @section Traffic exposure parameters
+##
 
 service:
   ## @param service.type Kubernetes Service type
@@ -462,24 +493,25 @@ service:
   ## clusterIP: None
   ##
   clusterIP: ""
-  ## @param service.port etcd client port
+  ## @param service.ports.client etcd client port
+  ## @param service.ports.peer etcd peer port
   ##
-  port: 2379
-  ## @param service.clientPortNameOverride etcd client port name override
-  ##
-  clientPortNameOverride: ""
-  ## @param service.peerPort etcd peer port
-  ##
-  peerPort: 2380
-  ## @param service.peerPortNameOverride etcd peer port name override
-  ##
-  peerPortNameOverride: ""
-  ## @param service.nodePorts [object] Specify the nodePort(s) value(s) for the LoadBalancer and NodePort service types.
+  ports:
+    client: 2379
+    peer: 2380
+  ## @param service.nodePorts.client Specify the nodePort client value for the LoadBalancer and NodePort service types.
+  ## @param service.nodePorts.peer Specify the nodePort peer value for the LoadBalancer and NodePort service types.
   ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
   ##
   nodePorts:
-    clientPort: ""
-    peerPort: ""
+    client: ""
+    peer: ""
+  ## @param service.clientPortNameOverride etcd client port name override
+  ##
+  clientPortNameOverride: ""
+  ## @param service.peerPortNameOverride etcd peer port name override
+  ##
+  peerPortNameOverride: ""
   ## @param service.loadBalancerIP loadBalancerIP for the etcd service (optional, cloud specific)
   ## ref: https://kubernetes.io/docs/user-guide/services/#type-loadbalancer
   ##
@@ -495,11 +527,30 @@ service:
   ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#external-ips
   ##
   externalIPs: []
+  ## @param service.externalTrafficPolicy %%MAIN_CONTAINER_NAME%% service external traffic policy
+  ## ref http://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
+  ##
+  externalTrafficPolicy: Cluster
+  ## @param service.extraPorts Extra ports to expose (normally used with the `sidecar` value)
+  ##
+  extraPorts: []
   ## @param service.annotations [object] Additional annotations for the etcd service
   ##
   annotations: {}
+  ## @param service.sessionAffinity Session Affinity for Kubernetes service, can be "None" or "ClientIP"
+  ## If "ClientIP", consecutive client requests will be directed to the same Pod
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies
+  ##
+  sessionAffinity: None
+  ## @param service.sessionAffinityConfig Additional settings for the sessionAffinity
+  ## sessionAffinityConfig:
+  ##   clientIP:
+  ##     timeoutSeconds: 300
+  ##
+  sessionAffinityConfig: {}
 
 ## @section Persistence parameters
+##
 
 ## Enable persistence using Persistent Volume Claims
 ## ref: https://kubernetes.io/docs/user-guide/persistent-volumes/
@@ -533,6 +584,7 @@ persistence:
   selector: {}
 
 ## @section Volume Permissions parameters
+##
 
 ## Init containers parameters:
 ## volumePermissions: Change the owner and group of the persistent volume mountpoint to runAsUser:fsGroup values from the securityContext section.
@@ -544,14 +596,17 @@ volumePermissions:
   ## @param volumePermissions.image.registry Init container volume-permissions image registry
   ## @param volumePermissions.image.repository Init container volume-permissions image name
   ## @param volumePermissions.image.tag Init container volume-permissions image tag
-  ## @param volumePermissions.image.pullPolicy Init container volume-permissions image pull policy
-  ## @param volumePermissions.image.pullSecrets [array] Specify docker-registry secret names as an array
+  ## @param volumePermissions.image.digest Init container volume-permissions image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
   ##
   image:
     registry: docker.io
     repository: bitnami/bitnami-shell
-    tag: 10-debian-10-r308
+    tag: 11-debian-11-r54
+    digest: ""
+    ## @param volumePermissions.image.pullPolicy Init container volume-permissions image pull policy
+    ##
     pullPolicy: IfNotPresent
+    ## @param volumePermissions.image.pullSecrets [array] Specify docker-registry secret names as an array
     ## Optionally specify an array of imagePullSecrets.
     ## Secrets must be manually created in the namespace.
     ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
@@ -574,6 +629,7 @@ volumePermissions:
     ## limits:
     ##    cpu: 500m
     ##    memory: 1Gi
+    ##
     limits: {}
     requests: {}
 
@@ -631,6 +687,7 @@ networkPolicy:
   ingressNSPodMatchLabels: {}
 
 ## @section Metrics parameters
+##
 
 metrics:
   ## @param metrics.enabled Expose etcd metrics
@@ -676,8 +733,35 @@ metrics:
     ## @param metrics.podMonitor.relabelings [array] Prometheus relabeling rules
     ##
     relabelings: []
+  
+  ## Prometheus Operator PrometheusRule configuration
+  ##
+  prometheusRule:
+    ## @param metrics.prometheusRule.enabled Create a Prometheus Operator PrometheusRule (also requires `metrics.enabled` to be `true` and `metrics.prometheusRule.rules`)
+    ##
+    enabled: false
+    ## @param metrics.prometheusRule.namespace Namespace for the PrometheusRule Resource (defaults to the Release Namespace)
+    ##
+    namespace: ""
+    ## @param metrics.prometheusRule.additionalLabels Additional labels that can be used so PrometheusRule will be discovered by Prometheus
+    ##
+    additionalLabels: {}
+    ## @param metrics.prometheusRule.rules Prometheus Rule definitions
+      # - alert: ETCD has no leader
+      #   annotations:
+      #     summary: "ETCD has no leader"
+      #     description: "pod {{`{{`}} $labels.pod {{`}}`}} state error, can't connect leader"
+      #   for: 1m
+      #   expr: etcd_server_has_leader == 0
+      #   labels:
+      #     severity: critical
+      #     group: PaaS
+    ##
+    rules: []
+
 
 ## @section Snapshotting parameters
+##
 
 ## Start a new etcd cluster recovering the data from an existing snapshot before bootstrapping
 ##
@@ -730,6 +814,7 @@ disasterRecovery:
       ## limits:
       ##    cpu: 500m
       ##    memory: 1Gi
+      ##
       limits: {}
       requests: {}
 
@@ -756,6 +841,7 @@ disasterRecovery:
     storageClassName: nfs
 
 ## @section Service account parameters
+##
 
 serviceAccount:
   ## @param serviceAccount.create Enable/disable service account creation
@@ -776,6 +862,7 @@ serviceAccount:
   labels: {}
 
 ## @section Other parameters
+##
 
 ## etcd Pod Disruption Budget configuration
 ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
@@ -783,10 +870,10 @@ serviceAccount:
 pdb:
   ## @param pdb.create Enable/disable a Pod Disruption Budget creation
   ##
-  create: false
+  create: true
   ## @param pdb.minAvailable Minimum number/percentage of pods that should remain scheduled
   ##
-  minAvailable: 1
+  minAvailable: 51%
   ## @param pdb.maxUnavailable Maximum number/percentage of pods that may be made unavailable
   ##
   maxUnavailable: ""
